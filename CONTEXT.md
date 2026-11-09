@@ -1,4 +1,4 @@
-# Debate Bro — working context
+# Change My Mind — working context
 
 Updated November 8, 2026. This file is the handoff for continued iteration. Read it alongside README.md; do not rely on an old chat being available.
 
@@ -6,9 +6,9 @@ Updated November 8, 2026. This file is the handoff for continued iteration. Read
 
 - Build a local, single-user research-first debate system that handles broad questions, researches opposing positions, checks material claims, judges substantive support, and offers one practical takeaway with inspectable evidence.
 - Keep iteration quick and changes simple. Use focused smoke checks; avoid adding test infrastructure or running paid benchmarks without a separate explicit action.
-- Product name: **debate bro**. Latest UI preference: primarily navy, with white text, navy input surfaces, and restrained purple/red accents. One topic box asking **What topic do you want to debate?**. Put the outcome directly underneath, then the opposing points and research summary. Evidence and transcripts stay expandable. No dashboard/sidebar/card grid.
+- Product name: **Change My Mind**. Latest UI preference: primarily navy, with white text, navy input surfaces, and restrained purple/red accents. One topic box asking **What topic do you want to debate?**. Put the outcome directly underneath, then the opposing points and research summary. Evidence and transcripts stay expandable. Use a ChatGPT/Codex-style sidebar and rounded composer with a clean system font.
 - Use the user's existing **ChatGPT Plus** plan. Earlier references to Pro were clarified to mean Plus. Do not assume Pro benefits or spend API funds.
-- GitHub repository: `adrithk/debate-bro`. It is now **public**, as explicitly requested after creation. GitHub repository names cannot contain spaces.
+- GitHub repository: `adrithk/change-my-mind`. It is now **public**, as explicitly requested after creation. GitHub repository names cannot contain spaces.
 
 ## Running locally
 
@@ -18,7 +18,7 @@ cd frontend
 npm ci
 npm run build
 cd ..
-uv run debate-bro serve
+uv run change-my-mind serve
 ```
 
 Open http://127.0.0.1:8000. Use one backend process. The backend serves the built frontend. `make setup` / `make run` are convenience commands. Frontend development uses Vite's proxy for both `/api` and `/auth`.
@@ -27,12 +27,12 @@ Open http://127.0.0.1:8000. Use one backend process. The backend serves the buil
 
 - **Continue with ChatGPT** starts the official public-client OAuth flow for local personal projects. No API key is needed. The user must sign into the account that actually has Plus and approve plan usage on OpenAI's screen.
 - A browser account may differ from the paid account in Codex. Do not infer a paid plan from a logged-in browser alone.
-- Sign-in is implemented in `debate_bro/chatgpt_auth.py`: stable host UUID, state + nonce + PKCE, issued dynamic client registration, validated OIDC signature/issuer/audience/expiry/nonce, granted-scope checks, serialized rotating refresh, protected atomic storage, saved account selection, and session revocation on sign-out.
+- Sign-in is implemented in `change_my_mind/chatgpt_auth.py`: stable host UUID, state + nonce + PKCE, issued dynamic client registration, validated OIDC signature/issuer/audience/expiry/nonce, granted-scope checks, serialized rotating refresh, protected atomic storage, saved account selection, and session revocation on sign-out.
 - Credentials live only in ignored `data/chatgpt/credentials.json` with directory mode 0700 and file mode 0600. Never commit, print, share, or put them into app records. HTTP access logging is disabled in the normal launch command so callback codes are not logged.
 - The OAuth provider calls public `/v1/responses`, with streaming and `store:false`. It waits for `response.completed`, uses `instructions` instead of system messages, and omits unsupported plan-route fields. Model catalog comes from the selected account's public `/v1/models` response.
 - **Paid API-key calls are disabled by default**, even when an API key is present. No automatic billing fallback exists. Both `DEBATE_ALLOW_PAID_API=true` and `OPENAI_API_KEY` would be needed for a separately billed API run. Do not enable them while the user's no-extra-spend constraint remains.
 - Plus does not qualify for the separate Pro/Business API-credit benefit. Its five-hour plan allowance is shared across apps, including Codex. A usage-limit error may be per-app or plan-wide; do not invent a reset time.
-- ChatGPT can also allow use of an app's credits balance. **For included usage only, the user must set Debate Bro's credits allowance to zero in ChatGPT Settings → Usage.** The app cannot change that account setting. Never purchase credits or enable auto-reload without separate authorization.
+- ChatGPT can also allow use of an app's credits balance. **For included usage only, the user must set Change My Mind's credits allowance to zero in ChatGPT Settings → Usage.** The app cannot change that account setting. Never purchase credits or enable auto-reload without separate authorization.
 - Plan mode counts request attempts (including retries) rather than pretending API dollar prices measure subscription usage. Default: 80/topic, 12 reserved for finalization, equal team allowances. Separately initiated suites default to 180 aggregate plan requests. Account limits still apply and a full debate can exhaust them.
 - The plan preview does not support server-enforced output-token or hosted-search-call caps. The timeout and request ceiling are additional bounds, not a guarantee of token usage within one request.
 - Interrupted/limited runs preserve evidence and successful private drafts. Resume does not switch billing paths.
@@ -88,7 +88,7 @@ Framing, neutral coverage review, investigation planning, consistency checking, 
 - `demo.py`: deterministic offline provider and explicitly fictional library evidence.
 - `api.py`, `cli.py`: local API, SSE, lifecycle, command-line setup/types/evaluation.
 - `frontend/src/App.tsx`, `styles.css`: intentionally simple single-page interface.
-- `frontend/src/api.generated.ts`: generated with `uv run debate-bro types` after public schema changes.
+- `frontend/src/api.generated.ts`: generated with `uv run change-my-mind types` after public schema changes.
 
 ## Workflow and evidence invariants
 

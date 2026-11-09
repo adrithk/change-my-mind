@@ -1,11 +1,7 @@
 :root {
   font-family:
-    Inter,
-    ui-sans-serif,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", ui-sans-serif,
+    "Segoe UI", sans-serif;
   --background: #060d1c;
   --surface: #0c172b;
   --border: #233451;
@@ -490,4 +486,256 @@ blockquote {
   * {
     scroll-behavior: auto !important;
   }
+}
+
+/* Quiet workspace chrome and a focused, conversational canvas. */
+:root {
+  font-size: 14px;
+}
+body {
+  letter-spacing: -0.15px;
+}
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 244px;
+  padding: 28px 14px 20px;
+  background: #040a16;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+.new-debate {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 30px 0 32px;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.new-debate:hover,
+.debate-history button:hover {
+  background: var(--surface);
+}
+.history-label {
+  padding: 0 12px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.debate-history {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.debate-history button {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 13px;
+}
+.debate-history button.selected {
+  background: var(--surface);
+}
+.history-empty {
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 20px 12px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--purple);
+  border-radius: 50%;
+}
+.header {
+  margin-left: 244px;
+  min-height: 76px;
+  padding: 18px 28px;
+  background: var(--background);
+  border-bottom: 0;
+}
+.wordmark {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  color: var(--muted);
+}
+.header-actions > select {
+  display: none;
+}
+.connect {
+  border-radius: 18px;
+  padding: 9px 15px;
+  font-size: 12px;
+}
+.connect:hover {
+  background: var(--surface);
+}
+main {
+  margin-left: 244px;
+  margin-right: 0;
+  max-width: none;
+  padding: 0 max(32px, calc((100vw - 244px - 760px) / 2));
+}
+.composer {
+  padding: 48px 0 32px;
+}
+.empty-state .composer {
+  padding-top: clamp(64px, 18vh, 190px);
+}
+h1 {
+  font-size: clamp(25px, 3vw, 32px);
+  font-weight: 500;
+  letter-spacing: -0.8px;
+  line-height: 1.3;
+  margin-bottom: 30px;
+}
+.empty-state h1 {
+  text-align: center;
+}
+.composer form {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px #00000014;
+}
+.composer form:focus-within {
+  border-color: var(--muted);
+}
+textarea {
+  padding: 22px 24px 10px;
+  font-size: 16px;
+  min-height: 100px;
+  resize: vertical;
+}
+.composer-bottom {
+  padding: 8px 14px 14px 24px;
+}
+.primary {
+  border-radius: 22px;
+  padding: 10px 17px;
+  gap: 9px;
+  font-weight: 500;
+}
+.composer-meta {
+  font-size: 12px;
+  padding: 16px 6px 0;
+}
+.composer-meta button {
+  text-decoration: none;
+}
+.settings {
+  padding: 20px 6px 0;
+}
+.settings summary {
+  font-size: 12px;
+}
+h2 {
+  font-size: 23px;
+  font-weight: 550;
+  letter-spacing: -0.5px;
+}
+p,
+li {
+  font-size: 15px;
+  line-height: 1.75;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.outcome > h2 {
+  font-size: clamp(25px, 3vw, 30px);
+  font-weight: 500;
+}
+.overlay section {
+  border-radius: 20px;
+}
+.clarification input,
+.settings-content select {
+  border-radius: 8px;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    width: 210px;
+  }
+  .header,
+  main {
+    margin-left: 210px;
+  }
+  main {
+    padding: 0 28px;
+  }
+}
+@media (max-width: 600px) {
+  .sidebar {
+    display: none;
+  }
+  .header {
+    margin-left: 0;
+    padding: 16px 18px;
+  }
+  .header-actions > select {
+    display: block;
+  }
+  main {
+    margin-left: 0;
+    padding: 0 20px;
+  }
+  .empty-state .composer {
+    padding-top: 12vh;
+  }
+  .composer {
+    padding-top: 32px;
+  }
+  h1 {
+    font-size: 26px;
+  }
+  .composer form {
+    border-radius: 20px;
+  }
+  textarea {
+    padding: 18px 18px 8px;
+  }
+  .composer-bottom {
+    padding-left: 18px;
+  }
+  .composer-meta {
+    font-size: 11px;
+  }
+}
+.composer textarea:focus-visible {
+  outline: none;
 }

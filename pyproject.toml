@@ -1,5 +1,5 @@
 [project]
-name = "debate-bro"
+name = "change-my-mind"
 version = "0.1.0"
 description = "Research-first debate with inspectable evidence and substantive assessment"
 requires-python = ">=3.12,<3.13"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-debate-bro = "debate_bro.cli:app"
+change-my-mind = "change_my_mind.cli:app"
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "respx>=0.22,<1", "ruff>=0.11,<1"]

@@ -127,7 +127,7 @@ class ChatGPTAuth:
                 .rstrip("="),
             }
             if not profile:
-                params["agent_name_hint"] = "Debate Bro"
+                params["agent_name_hint"] = "Change My Mind"
             elif profile.get("email"):
                 params["login_hint"] = profile["email"]
             # No ID token in a URL: use the account selector on reauthorization.

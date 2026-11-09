@@ -26,7 +26,7 @@ from .schemas import (
 
 DEMO_QUESTION = "Should our city library extend its evening opening hours?"
 CORPUS = {
-    "https://fixtures.debatebro.test/pilot": (
+    "https://fixtures.changemymind.test/pilot": (
         "Fictional evening-hours pilot",
         """SYNTHETIC DEMONSTRATION DATA — not a real study.
 
@@ -35,7 +35,7 @@ The fictional library pilot recorded 1,200 additional visits across twelve eveni
 The pilot could establish observed attendance, but could not establish whether a permanent extension would cause the same increase. The report does not include staffing costs.
 """,
     ),
-    "https://fixtures.debatebro.test/finance": (
+    "https://fixtures.changemymind.test/finance": (
         "Fictional staffing and access memo",
         """SYNTHETIC DEMONSTRATION DATA — not a real financial record.
 
@@ -44,7 +44,7 @@ The fictional pilot incurred $9,600 in additional staffing costs across twelve e
 The last connecting bus departs at 20:00. Staffing availability, disability access, safety, and the distribution of benefits should be assessed before expansion.
 """,
     ),
-    "https://fixtures.debatebro.test/survey": (
+    "https://fixtures.changemymind.test/survey": (
         "Fictional visitor survey",
         """SYNTHETIC DEMONSTRATION DATA — not a real survey.
 

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, LoaderCircle, X } from "lucide-react";
+import {
+  ArrowUp,
+  LoaderCircle,
+  MessageSquare,
+  SquarePen,
+  X,
+} from "lucide-react";
 import {
   api,
   request,
@@ -274,6 +280,49 @@ export default function App() {
 
   return (
     <>
+      <aside className="sidebar" aria-label="Debate navigation">
+        <a
+          className="sidebar-brand"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            select("");
+            setQuestion("");
+          }}
+        >
+          <MessageSquare size={20} /> Change My Mind
+        </a>
+        <button
+          className="new-debate"
+          onClick={() => {
+            select("");
+            setQuestion("");
+            document.getElementById("topic")?.focus();
+          }}
+        >
+          <SquarePen size={17} /> New debate
+        </button>
+        <div className="history-label">Your debates</div>
+        <nav className="debate-history" aria-label="Recent debates">
+          {history.length ? (
+            history.map((r) => (
+              <button
+                key={r.id}
+                className={selected === r.id ? "selected" : ""}
+                onClick={() => select(r.id)}
+                title={r.question}
+              >
+                {r.question}
+              </button>
+            ))
+          ) : (
+            <p className="history-empty">Your debates will appear here.</p>
+          )}
+        </nav>
+        <div className="sidebar-footer">
+          <span className="status-dot" /> A little more perspective.
+        </div>
+      </aside>
       <header className="header">
         <a
           className="wordmark"
@@ -284,7 +333,7 @@ export default function App() {
             setQuestion("");
           }}
         >
-          debate bro
+          Change My Mind
         </a>
         <div className="header-actions">
           {history.length > 0 && (
@@ -310,7 +359,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      <main>
+      <main className={run ? "has-debate" : "empty-state"}>
         <section className="composer" aria-label="Start a debate">
           <h1>
             <label htmlFor="topic">What topic do you want to debate?</label>
@@ -345,7 +394,7 @@ export default function App() {
                   <LoaderCircle size={16} className="spin" />
                 ) : (
                   <>
-                    Debate <ArrowRight size={16} />
+                    Debate <ArrowUp size={17} />
                   </>
                 )}
               </button>
@@ -798,7 +847,7 @@ export default function App() {
               limits are shared across apps.
             </p>
             <p>
-              For included usage only, set Debate Bro’s credit allowance to zero
+              For included usage only, set Change My Mind’s credit allowance to zero
               in ChatGPT Usage settings. Paid API requests are disabled.
             </p>
             <a

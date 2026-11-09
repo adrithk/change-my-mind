@@ -41,7 +41,7 @@ def create_app(settings: Settings | None = None):
         await auth.aclose()
         await store.close()
 
-    app = FastAPI(title="Debate Bro", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Change My Mind", version="0.1.0", lifespan=lifespan)
     app.state.store, app.state.jobs = store, jobs
     app.state.chatgpt_auth = auth
 
@@ -106,7 +106,7 @@ def create_app(settings: Settings | None = None):
                 else "ChatGPT sign-in could not complete. Return to the app and try the saved registration again."
             )
             return HTMLResponse(
-                f"<h1>Connection needs attention</h1><p>{escape(message)}</p><a href='/'>Return to Debate Bro</a>",
+                f"<h1>Connection needs attention</h1><p>{escape(message)}</p><a href='/'>Return to Change My Mind</a>",
                 status_code=400,
                 headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
             )
@@ -313,7 +313,7 @@ def create_app(settings: Settings | None = None):
         if index.is_file():
             return FileResponse(index)
         return HTMLResponse(
-            "<h1>Debate Bro backend is ready</h1><p>Build the frontend with <code>npm run build</code> in frontend/, or use the development server.</p><a href='/docs'>API documentation</a>"
+            "<h1>Change My Mind backend is ready</h1><p>Build the frontend with <code>npm run build</code> in frontend/, or use the development server.</p><a href='/docs'>API documentation</a>"
         )
 
     return app

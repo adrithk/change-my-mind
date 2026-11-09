@@ -1,4 +1,4 @@
-# Debate Bro
+# Change My Mind
 
 A local, research-first assessment app. Two equally configured AI teams investigate a broad question, challenge each other's cases, and correct errors before a substantive judge and decision analyst produce an inspectable assessment.
 
@@ -13,11 +13,11 @@ uv sync
 cd frontend
 npm ci
 cd ..
-uv run debate-bro types
+uv run change-my-mind types
 cd frontend
 npm run build
 cd ..
-uv run debate-bro serve
+uv run change-my-mind serve
 ```
 
 Open **http://127.0.0.1:8000**. `make setup` and `make run` provide the same setup and launch steps. Use one backend worker. The built React application is served by FastAPI.
@@ -26,8 +26,8 @@ Choose **Explore a demo** to exercise the entire pipeline without an API key or 
 
 ### Use your existing ChatGPT Plus plan
 
-1. Open the app at **http://127.0.0.1:8000** and choose **Continue with ChatGPT**. Select the account with Plus and approve Debate Bro's plan-usage permission on OpenAI's screen. A Free account in your browser can differ from the account signed into Codex.
-2. Open **Manage usage** in the app. In ChatGPT Usage settings, set Debate Bro's **credits allowance to zero** to use included usage only. Account settings, rather than this app, govern credit spending. Do not purchase credits or enable automatic reload to use this route.
+1. Open the app at **http://127.0.0.1:8000** and choose **Continue with ChatGPT**. Select the account with Plus and approve Change My Mind's plan-usage permission on OpenAI's screen. A Free account in your browser can differ from the account signed into Codex.
+2. Open **Manage usage** in the app. In ChatGPT Usage settings, set Change My Mind's **credits allowance to zero** to use included usage only. Account settings, rather than this app, govern credit spending. Do not purchase credits or enable automatic reload to use this route.
 3. Enter a question and start research. Both lead researchers use **GPT-6 Astra at xhigh**; judgment uses **Astra high**, fact checking/final consistency use **GPT-6.1 Sol xhigh**, debate/decision analysis/dispute planning use **Sol high**, and framing/coverage use **Sol medium**. Both teams receive identical settings. Astra and Sol availability is checked against your account before starting; no model is silently substituted. The Connection disclosure shows the assignments.
 
 This is OpenAI's [official local personal-project integration](https://developers.openai.com/siwc/token-sharing-open-source). No API key is required. OAuth credentials are saved in `data/chatgpt/credentials.json` with owner-only permissions. They are never exposed to the browser, reports, application records, or source control. Sign-out attempts remote session revocation and clears local tokens while retaining the account registration for reconnection. Do not share this file or include it in support requests.
@@ -38,7 +38,7 @@ Separately billed API calls are **disabled by default**, even if `OPENAI_API_KEY
 
 ### Development
 
-Run `uv run debate-bro serve` in one terminal and `npm run dev` from `frontend/` in another. Vite proxies `/api` to port 8000.
+Run `uv run change-my-mind serve` in one terminal and `npm run dev` from `frontend/` in another. Vite proxies `/api` to port 8000.
 
 Settings and defaults:
 
@@ -114,7 +114,7 @@ POST /api/runs/{id}/robustness          # separate aggregate budget_usd
 POST /api/runs/{id}/evaluations         # separate aggregate budget_usd
 ```
 
-Frontend DTOs are generated from FastAPI's OpenAPI schema with `uv run debate-bro types`. Regenerate them when public types change.
+Frontend DTOs are generated from FastAPI's OpenAPI schema with `uv run change-my-mind types`. Regenerate them when public types change.
 
 To add a provider, implement `ModelProvider.generate` and `WebDiscovery.discover`, returning typed output and measured usage. Register its capabilities, pricing, configuration validation, and factory. Workflow and evidence code do not depend on an OpenAI client. `SourceFetcher` is independently replaceable. Keep these trust boundaries and add contract tests for the new adapter.
 
@@ -123,7 +123,7 @@ SQLite stores application records and usage separately from LangGraph's checkpoi
 ## Validation
 
 ```sh
-uv run ruff check debate_bro tests
+uv run ruff check change_my_mind tests
 uv run pytest -q
 cd frontend
 npm run build
@@ -135,7 +135,7 @@ The browser suite uses locally installed Google Chrome. It starts its own backen
 Run the offline evaluation tool:
 
 ```sh
-uv run debate-bro evaluate --demo
+uv run change-my-mind evaluate --demo
 ```
 
 It compares the full workflow against a single neutral researcher, independent research synthesized without debate, and fewer debate rounds. The HTML report includes per-variant usage and correction/checking metrics. A deliberately explicit `--no-demo` starts a paid evaluation: its original-topic allowance and separate suite allowance are displayed before execution. Both can be limited using `--budget`.

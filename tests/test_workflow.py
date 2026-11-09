@@ -1,12 +1,12 @@
 import pytest
 
-from debate_bro.demo import DemoProvider, FixtureFetcher
-from debate_bro.errors import ProviderFailure
-from debate_bro.evidence import Evidence
-from debate_bro.providers import Gateway
-from debate_bro.reports import html_report, report_data
-from debate_bro.schemas import Submission
-from debate_bro.workflow import Workflow
+from change_my_mind.demo import DemoProvider, FixtureFetcher
+from change_my_mind.errors import ProviderFailure
+from change_my_mind.evidence import Evidence
+from change_my_mind.providers import Gateway
+from change_my_mind.reports import html_report, report_data
+from change_my_mind.schemas import Submission
+from change_my_mind.workflow import Workflow
 
 
 def workflow(store, provider=None):
@@ -101,8 +101,8 @@ async def test_partial_check_batch_resumes_without_changing_targets(store, run_i
 
 
 async def test_clarification_preserves_original_question_and_revises_frame(store, run_id):
-    from debate_bro.errors import NeedsReview
-    from debate_bro.schemas import Frame
+    from change_my_mind.errors import NeedsReview
+    from change_my_mind.schemas import Frame
 
     class Ambiguous(DemoProvider):
         async def generate(self, role, context, schema, config):

@@ -2,9 +2,9 @@ import asyncio
 
 import pytest
 
-from debate_bro.errors import BudgetExceeded, Cancelled
-from debate_bro.schemas import RunCreate
-from debate_bro.store import Store
+from change_my_mind.errors import BudgetExceeded, Cancelled
+from change_my_mind.schemas import RunCreate
+from change_my_mind.store import Store
 
 
 async def test_concurrent_reservations_cannot_overspend(store):
@@ -61,8 +61,8 @@ async def test_cancel_blocks_new_calls(store, run_id):
 
 
 async def test_job_cancellation_keeps_worker_available(store, run_id, tmp_path):
-    from debate_bro.config import Settings
-    from debate_bro.jobs import Jobs
+    from change_my_mind.config import Settings
+    from change_my_mind.jobs import Jobs
 
     started = asyncio.Event()
 

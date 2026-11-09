@@ -1,14 +1,14 @@
 import pytest
 
-from debate_bro.demo import FixtureFetcher
-from debate_bro.errors import EvidenceError
-from debate_bro.evidence import Evidence, canonical_url, validate_public_url
-from debate_bro.schemas import ClaimDraft, RunCreate
+from change_my_mind.demo import FixtureFetcher
+from change_my_mind.errors import EvidenceError
+from change_my_mind.evidence import Evidence, canonical_url, validate_public_url
+from change_my_mind.schemas import ClaimDraft, RunCreate
 
 
 async def test_private_evidence_and_topic_boundaries(store, run_id):
     evidence = Evidence(store, FixtureFetcher())
-    source = await evidence.retrieve(run_id, "https://fixtures.debatebro.test/pilot", team="A")
+    source = await evidence.retrieve(run_id, "https://fixtures.changemymind.test/pilot", team="A")
     passages = await store.records(run_id, audience="A", kinds=["passage"])
     assert passages
     assert not await store.records(run_id, audience="B")
@@ -34,7 +34,7 @@ async def test_private_evidence_and_topic_boundaries(store, run_id):
 
 async def test_fabricated_quotes_and_unknown_citations_are_rejected(store, run_id):
     evidence = Evidence(store, FixtureFetcher())
-    source = await evidence.retrieve(run_id, "https://fixtures.debatebro.test/pilot")
+    source = await evidence.retrieve(run_id, "https://fixtures.changemymind.test/pilot")
     with pytest.raises(EvidenceError, match="verbatim"):
         await evidence.register_passage(
             run_id, source, "The study proved permanent benefits for everyone.", "page 1", "fabricated"
@@ -55,7 +55,7 @@ async def test_fabricated_quotes_and_unknown_citations_are_rejected(store, run_i
 
 async def test_correction_invalidates_transitive_dependents(store, run_id):
     evidence = Evidence(store, FixtureFetcher())
-    await evidence.retrieve(run_id, "https://fixtures.debatebro.test/pilot")
+    await evidence.retrieve(run_id, "https://fixtures.changemymind.test/pilot")
     passage = (await store.records(run_id, kinds=["passage"]))[1]
     claim = await store.put(
         run_id,

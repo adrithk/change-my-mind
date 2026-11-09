@@ -1,11 +1,11 @@
 import pytest
 
-from debate_bro.demo import DemoProvider, FixtureFetcher
-from debate_bro.evidence import Evidence
-from debate_bro.model_policy import invocation_config
-from debate_bro.providers import Gateway
-from debate_bro.schemas import RunCreate
-from debate_bro.workflow import Workflow
+from change_my_mind.demo import DemoProvider, FixtureFetcher
+from change_my_mind.evidence import Evidence
+from change_my_mind.model_policy import invocation_config
+from change_my_mind.providers import Gateway
+from change_my_mind.schemas import RunCreate
+from change_my_mind.workflow import Workflow
 
 
 async def test_two_lead_researchers_and_role_routing_complete_offline(store):

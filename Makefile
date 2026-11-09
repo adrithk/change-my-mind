@@ -3,17 +3,17 @@
 setup:
 	uv sync
 	cd frontend && npm ci
-	uv run debate-bro types
+	uv run change-my-mind types
 	cd frontend && npm run build
 
 run:
-	uv run debate-bro serve
+	uv run change-my-mind serve
 
 types:
-	uv run debate-bro types
+	uv run change-my-mind types
 
 check:
-	uv run ruff check debate_bro tests
+	uv run ruff check change_my_mind tests
 	uv run pytest -q
 	cd frontend && npm run build
 	cd frontend && npm run test:e2e

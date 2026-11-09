@@ -1,7 +1,7 @@
 import pytest
 
-from debate_bro.schemas import RunCreate
-from debate_bro.store import Store
+from change_my_mind.schemas import RunCreate
+from change_my_mind.store import Store
 
 
 @pytest.fixture

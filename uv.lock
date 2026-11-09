@@ -222,7 +222,7 @@ wheels = [
 ]
 
 [[package]]
-name = "debate-bro"
+name = "change-my-mind"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

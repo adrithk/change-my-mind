@@ -2,8 +2,8 @@ import time
 
 from fastapi.testclient import TestClient
 
-from debate_bro.api import create_app
-from debate_bro.config import Settings
+from change_my_mind.api import create_app
+from change_my_mind.config import Settings
 
 
 def test_local_api_complete_demo_and_exports(tmp_path):

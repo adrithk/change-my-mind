@@ -2,10 +2,10 @@ import httpx
 import pytest
 import respx
 
-from debate_bro.demo import DemoProvider
-from debate_bro.errors import ProviderFailure
-from debate_bro.providers import Gateway, ModelResult, OpenAIProvider
-from debate_bro.schemas import ConsistencyReview, ModelConfig, RunCreate, SearchResults
+from change_my_mind.demo import DemoProvider
+from change_my_mind.errors import ProviderFailure
+from change_my_mind.providers import Gateway, ModelResult, OpenAIProvider
+from change_my_mind.schemas import ConsistencyReview, ModelConfig, RunCreate, SearchResults
 
 
 def response_json(output, *, search=False):

@@ -58,7 +58,7 @@ class HTTPSourceFetcher:
             timeout=25,
             follow_redirects=False,
             trust_env=False,
-            headers={"User-Agent": "DebateBro/0.1 public-source research"},
+            headers={"User-Agent": "ChangeMyMind/0.1 public-source research"},
         ) as client:
             for _ in range(6):
                 await validate_public_url(url)

@@ -10,12 +10,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from test_providers import response_json
 
-from debate_bro.api import create_app
-from debate_bro.chatgpt_auth import ISSUER, PLAN_SCOPE, RESOURCE, TOKEN, ChatGPTAuth
-from debate_bro.config import Settings
-from debate_bro.errors import BudgetExceeded, ProviderFailure
-from debate_bro.providers import ChatGPTPlanProvider, Gateway
-from debate_bro.schemas import ConsistencyReview, ModelConfig, RunCreate
+from change_my_mind.api import create_app
+from change_my_mind.chatgpt_auth import ISSUER, PLAN_SCOPE, RESOURCE, TOKEN, ChatGPTAuth
+from change_my_mind.config import Settings
+from change_my_mind.errors import BudgetExceeded, ProviderFailure
+from change_my_mind.providers import ChatGPTPlanProvider, Gateway
+from change_my_mind.schemas import ConsistencyReview, ModelConfig, RunCreate
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ async def test_oauth_pkce_identity_credentials_and_reauthorization(tmp_path, ide
     metadata_routes(identity)
     auth = ChatGPTAuth(tmp_path)
     result, query, route = await login(auth, identity[1])
-    assert query["client_id"] == ["dynamic_agent_client"] and query["agent_name_hint"] == ["Debate Bro"]
+    assert query["client_id"] == ["dynamic_agent_client"] and query["agent_name_hint"] == ["Change My Mind"]
     assert query["code_challenge_method"] == ["S256"]
     form = parse_qs(route.calls.last.request.content.decode())
     assert form["client_id"] == ["oaiapp_test"] and "client_secret" not in form
