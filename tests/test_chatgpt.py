@@ -205,6 +205,33 @@ async def test_streaming_plan_contract_and_terminal_quota_no_fallback(store):
     assert usage[0]["details"]["billing"] == "chatgpt_plan"
 
 
+@respx.mock
+async def test_sse_usage_limit_is_reported_without_retry_or_api_fallback(store):
+    class Auth:
+        async def access_token(self, profile):
+            return "plan-token"
+
+    event = {
+        "error": {"code": "subscription_sharing_usage_limit_exceeded", "message": "Sharing allowance reached"}
+    }
+    route = respx.post(RESOURCE + "/responses").respond(
+        200,
+        content="event: error\ndata: " + json.dumps(event) + "\n\n",
+        headers={"Content-Type": "text/event-stream"},
+    )
+    provider = ChatGPTPlanProvider(Auth(), "saved-profile")
+    run_id = await store.create_run(RunCreate(question="Streaming quota regression"))
+    gateway = Gateway(store, provider, provider)
+    gateway.token_count = lambda _: 1
+    with pytest.raises(ProviderFailure, match="plan or this app's sharing limit") as error:
+        await gateway.invoke(run_id, "frame", "framer", {}, ConsistencyReview)
+    assert not error.value.retryable and route.call_count == 1
+    assert "subscription_sharing_usage_limit_exceeded" in str(error.value)
+    assert "Invalid ChatGPT stream" not in str(error.value)
+    usage = await store.usage(run_id)
+    assert len(usage) == 1 and usage[0]["state"] == "uncertain"
+
+
 async def test_plan_concurrent_request_reservation_and_final_reserve(store):
     run = await store.create_run(RunCreate(question="Plan concurrency test", request_limit=20))
     for i in range(7):

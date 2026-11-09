@@ -75,6 +75,49 @@ async def test_report_escapes_untrusted_content(store, run_id):
     assert "&lt;script&gt;" in html
 
 
+async def test_source_requests_before_research_become_agenda_and_cached_frame_recovers(store, run_id):
+    from change_my_mind.schemas import EvidenceRequest, Frame, ResearchPlan
+
+    class SourceSeeking(DemoProvider):
+        frame_calls = 0
+
+        async def generate(self, role, context, schema, config):
+            result = await super().generate(role, context, schema, config)
+            if schema in {Frame, ResearchPlan}:
+                result.output.evidence_requests = [
+                    EvidenceRequest(source_id="", query="Find original records and contrary evidence")
+                ]
+            if schema is Frame:
+                self.frame_calls += 1
+            if schema is ResearchPlan:
+                assert any(
+                    "Find original records" in " ".join(r["queries"]) for r in context["research_agenda"]
+                )
+                other = "B" if context["team"] == "A" else "A"
+                visible = await store.records(run_id, audience=context["team"], kinds=["research_agenda"])
+                assert all(r.team != other for r in visible)
+            return result
+
+    provider = SourceSeeking()
+    engine = workflow(store, provider)
+    # Reproduce the stored response from the broken flow. Recovery must reuse it.
+    await engine.gateway.invoke(run_id, "frame:0:read:0", "framer", {}, Frame)
+    await store.set_status(
+        run_id,
+        "needs_review",
+        stage="framing",
+        error="Specialist still needs source details after the bounded retrieval allowance",
+    )
+    await engine.execute(run_id)
+    run = await store.get_run(run_id)
+    assert run.status == "completed" and provider.frame_calls == 1
+    assert len([r for r in run.records if r.kind == "research_agenda"]) == 3
+    assert not next(r for r in run.records if r.kind == "frame").data["evidence_requests"]
+    assert (
+        len([r for r in await store.records(run_id, kinds=["invocation"]) if r.key.startswith("frame:")]) == 1
+    )
+
+
 async def test_partial_check_batch_resumes_without_changing_targets(store, run_id, monkeypatch):
     original = store.apply_check
     calls = 0

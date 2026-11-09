@@ -23,12 +23,14 @@ contrary findings, corrections, and uncertainty. Search summaries are not source
 Present the strongest defensible position and concede verified errors. Do not optimize for rhetoric.
 Every new material factual assertion must be included in claims/new_claims. Treat normative premises
 as values, never as empirically proven facts. Give concise explicit justifications.
-If source details are missing, use evidence_requests to ask for registered source IDs and a query.
+If more details of an already registered source are needed, use evidence_requests with its visible
+source ID and a query. Never use blank or invented source IDs. Before research exists, describe
+evidence needs as research questions, not source retrieval requests.
 Do not treat repeated articles or repeated model judgments as independent corroboration.
 Return only the requested structured output. Empty lists are appropriate when evidence is absent.
 """
 ROLE_INSTRUCTIONS = {
-    "framer": "Map the broad question without requiring narrowing. Make provisional opposing positions explicit. Distinguish populations from institutions and particular actions. Do not decide the winner.",
+    "framer": "Map the broad question without requiring narrowing. You run BEFORE research: no retrieved evidence is available or required for provisional framing. Return evidence_requests=[] and defer source questions to research. Ask for clarification only when missing user intent blocks a useful framing; missing sources are not a clarification request. Make provisional opposing positions explicit. Distinguish populations from institutions and particular actions. Do not decide the winner.",
     "coverage": "Write an accessible balanced research synthesis, preserving major disagreements. Identify important omissions, team framing challenges, and alternative perspectives in both independent briefings. Supplement the agenda; do not choose a winner.",
     "checker": "Independently verify exact scoped claims. Inspect contrary evidence and underlying methods. Distinguish source attribution from truth and method quality. Normative claims must be not_fact_checkable.",
     "investigator": "Select unresolved disputes that could change the outcome. State an observable resolution test and whether further research has high expected value. Do not pretend research resolves value choices.",
@@ -190,16 +192,20 @@ class ChatGPTPlanProvider(OpenAIProvider):
         pass  # Each streamed request owns its client; the app owns the auth manager.
 
     @staticmethod
-    def plan_error(code, status=None, request_id=None):
+    def plan_error(code, status=None, request_id=None, *, message=None, param=None):
         diagnostic = (
             f" [{code or 'admission_error'}, HTTP {status or 'stream'}, request {request_id or 'unknown'}]"
         )
+        if param:
+            diagnostic += f" Field: {param}."
         if code == "subscription_sharing_usage_limit_exceeded" or status == 429:
             return ProviderFailure(
-                "ChatGPT usage limit reached. Review ChatGPT Settings → Usage, then resume when access is available. No API fallback was attempted."
+                "ChatGPT blocked this request because the plan or this app's sharing limit was reached. Open Manage usage to review Change My Mind's plan allowance, then resume when access is available. No API fallback was attempted."
                 + diagnostic,
                 uncertain=True,
             )
+        if message:
+            diagnostic += " " + str(message)[:500]
         return ProviderFailure(
             "ChatGPT plan request failed. Check the selected account, permissions, and supported capabilities. No API fallback was attempted."
             + diagnostic,
@@ -244,12 +250,28 @@ class ChatGPTPlanProvider(OpenAIProvider):
                     return response
         except openai.APIStatusError as error:
             raise self.plan_error(
-                getattr(error, "code", None), error.status_code, getattr(error, "request_id", None)
+                getattr(error, "code", None),
+                error.status_code,
+                getattr(error, "request_id", None),
+                message=getattr(error, "message", None),
+                param=getattr(error, "param", None),
             ) from error
         except (openai.APITimeoutError, openai.APIConnectionError) as error:
             raise ProviderFailure(
                 "ChatGPT connection interrupted; outcome unknown. No API fallback was attempted.",
                 uncertain=True,
+            ) from error
+        except openai.APIError as error:
+            # The SDK raises for SSE error frames before yielding them to our loop.
+            # Preserve the provider's code/field instead of labelling every rejection invalid JSON.
+            body = error.body if isinstance(error.body, dict) else {}
+            detail = body.get("error", body)
+            detail = detail if isinstance(detail, dict) else {}
+            raise self.plan_error(
+                getattr(error, "code", None) or detail.get("code"),
+                request_id=getattr(error, "request_id", None),
+                message=detail.get("message") or getattr(error, "message", None),
+                param=getattr(error, "param", None) or detail.get("param"),
             ) from error
         except ProviderFailure:
             raise

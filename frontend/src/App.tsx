@@ -540,7 +540,7 @@ export default function App() {
                   Stop
                 </button>
               )}
-              {["interrupted", "failed", "cancelled"].includes(run.status) && (
+              {(["interrupted", "failed", "cancelled"].includes(run.status) || (run.status === "needs_review" && run.stage === "framing" && run.error === "Specialist still needs source details after the bounded retrieval allowance")) && (
                 <button onClick={() => action("resume")} disabled={busy}>
                   Resume
                 </button>
@@ -555,13 +555,13 @@ export default function App() {
             {run.error && (
               <p className="notice">
                 {run.error}{" "}
-                <a
+                {(run.error.includes("subscription_sharing_") || run.error.includes("ChatGPT usage limit") || run.error.includes("sharing limit")) && <a
                   href="https://chatgpt.com/settings/usage"
                   target="_blank"
                   rel="noreferrer"
                 >
                   Manage usage ↗
-                </a>
+                </a>}
               </p>
             )}
             {judgment ? (

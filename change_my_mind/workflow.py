@@ -49,6 +49,7 @@ class Workflow:
         selected = claims[:100] + sources[:60] + passages
         for kind in [
             "frame",
+            "research_agenda",
             "briefing",
             "coverage",
             "submission",
@@ -134,6 +135,24 @@ class Workflow:
             )
             if not output.evidence_requests:
                 return output
+            if schema in {Frame, ResearchPlan}:
+                # These stages precede retrieval. Source requests are questions for research,
+                # not a reason to replay an already-complete framing/planning response.
+                await self.store.put(
+                    run_id,
+                    "research_agenda",
+                    key,
+                    {
+                        "queries": [
+                            request.query for request in output.evidence_requests if request.query.strip()
+                        ],
+                        "origin_role": role,
+                    },
+                    stage="framing" if schema is Frame else "research",
+                    team=team,
+                    public=team is None,
+                )
+                return output.model_copy(update={"evidence_requests": []})
             if attempt == 2:
                 raise NeedsReview(
                     "Specialist still needs source details after the bounded retrieval allowance"
@@ -147,7 +166,8 @@ class Workflow:
             context = {
                 **context,
                 "additional_passages": extra,
-                "instruction": "Use the requested evidence and produce a final output; disclose remaining gaps.",
+                "instruction": context.get("instruction", "")
+                + "\nUse the requested evidence and produce a final output; disclose remaining gaps.",
             }
             await self.store.emit(run_id, "retrieval", {"role": role, "passages": len(extra)})
 
@@ -216,7 +236,7 @@ class Workflow:
                 "original_question": run.question,
                 "clarifications": [a.data["answer"] for a in answers],
                 "variant": run.config.get("variant", "standard"),
-                "instruction": "For paraphrase variant, use an equivalent working question while preserving the original. For reverse variant, reverse the working side assignments.",
+                "instruction": "This is provisional framing BEFORE research, not a factual assessment. No sources have been retrieved yet. Map the question and working positions without establishing disputed facts. Return evidence_requests=[]; phrase source needs as issues for the research stage. clarification_needed is only for missing user intent that prevents useful progress, never for missing research evidence. For paraphrase variant, use an equivalent working question while preserving the original. For reverse variant, reverse the working side assignments.",
             },
             Frame,
         )
@@ -331,6 +351,12 @@ class Workflow:
                         "team": team,
                         "stage": "research",
                         "current_framing": frame,
+                        "research_agenda": [
+                            r.data
+                            for r in await self.store.records(
+                                run_id, audience=team, kinds=["research_agenda"]
+                            )
+                        ],
                         "assigned_position": frame[f"position_{team.lower()}"]
                         if run.config["mode"] != "single"
                         else "Assess both positions neutrally",
