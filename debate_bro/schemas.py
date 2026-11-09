@@ -10,8 +10,9 @@ class StrictModel(BaseModel):
 class ModelConfig(StrictModel):
     provider: Literal["chatgpt", "openai", "demo"] = "chatgpt"
     model: str = "gpt-6.1-sol"
-    reasoning: Literal["low", "medium", "high"] = "medium"
+    reasoning: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     max_output_tokens: int = Field(default=6000, ge=1000, le=12000)
+    timeout_seconds: int = Field(default=180, ge=30, le=600)
 
 
 class RunCreate(StrictModel):
@@ -20,6 +21,7 @@ class RunCreate(StrictModel):
     budget_usd: float = Field(default=15, ge=0.50, le=15)
     mode: Literal["full", "single", "synthesis", "reduced"] = "full"
     request_limit: int = Field(default=80, ge=20, le=120)
+    model_policy: Literal["research_first", "uniform"] = "research_first"
 
 
 class SuiteCreate(StrictModel):
@@ -46,6 +48,20 @@ class EvidenceRequest(StrictModel):
 
 class AgentOutput(StrictModel):
     evidence_requests: list[EvidenceRequest] = Field(default_factory=list)
+
+
+class ResearchTrack(StrictModel):
+    track: Literal["background", "competing explanations", "consequences"]
+    search_queries: list[str] = Field(min_length=1, max_length=3)
+    evidence_standard: str
+    pitfalls: list[str]
+
+
+class ResearchPlan(AgentOutput):
+    strategy: str
+    tracks: list[ResearchTrack] = Field(min_length=3, max_length=3)
+    decisive_tests: list[str]
+    stop_criteria: list[str]
 
 
 class Frame(AgentOutput):

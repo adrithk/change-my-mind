@@ -13,6 +13,7 @@ from .config import PRICE_VERSION, PRICING, STAGES, TERMINAL, Settings
 from .demo import DEMO_QUESTION
 from .errors import EvidenceError, ProviderFailure
 from .jobs import Jobs
+from .model_policy import ROLE_PROFILES, freeze_roles
 from .reports import html_report, markdown_report, report_data
 from .schemas import (
     ChatGPTLogin,
@@ -75,6 +76,7 @@ def create_app(settings: Settings | None = None):
             "chatgpt": auth.status(),
             "models": list(PRICING),
             "default_model": "gpt-6.1-sol",
+            "role_profiles": ROLE_PROFILES,
             "default_budget_usd": 15,
             "target_cost": "$2–5 (unmeasured target)",
             "stages": STAGES,
@@ -131,6 +133,10 @@ def create_app(settings: Settings | None = None):
 
     @app.post("/api/runs", response_model=RunView, status_code=201)
     async def create_run(request: RunCreate):
+        role_configs = freeze_roles(request.model_dump(by_alias=True))
+        required_models = {values["model"] for values in role_configs.values()} or {
+            request.model_config_.model
+        }
         if request.model_config_.provider == "openai":
             if not settings.allow_paid_api:
                 raise HTTPException(
@@ -140,7 +146,7 @@ def create_app(settings: Settings | None = None):
                 raise HTTPException(
                     422, "Set OPENAI_API_KEY in the backend .env before starting real research."
                 )
-            if request.model_config_.model not in PRICING:
+            if required_models - PRICING.keys():
                 raise HTTPException(422, "Model has no verified price configuration")
         if request.model_config_.provider == "demo":
             request.question = DEMO_QUESTION
@@ -148,8 +154,14 @@ def create_app(settings: Settings | None = None):
         if request.model_config_.provider == "chatgpt":
             profile_id = auth.active_id()
             available = await auth.models(profile_id)
-            if request.model_config_.model not in {m["slug"] for m in available}:
-                raise HTTPException(422, "Choose a model available to the selected ChatGPT account")
+            missing = required_models - {m["slug"] for m in available}
+            if missing:
+                raise HTTPException(
+                    422,
+                    "This role configuration requires unavailable models: "
+                    + ", ".join(sorted(missing))
+                    + ". No model or billing fallback was attempted.",
+                )
             extra = {"chatgpt_profile_id": profile_id, "billing": "chatgpt_plan"}
         run_id = await store.create_run(request, extra=extra)
         jobs.wake.set()

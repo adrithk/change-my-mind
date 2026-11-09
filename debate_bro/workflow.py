@@ -16,6 +16,7 @@ from .schemas import (
     Investigation,
     Judgment,
     Recommendation,
+    ResearchPlan,
     Submission,
 )
 from .store import Store
@@ -239,14 +240,24 @@ class Workflow:
         run = await self.store.get_run(run_id, records=False)
         frame = (await self.current_frame(run_id)).data
         default_query = f"{frame['working_question']} {track} original evidence systematic review contrary findings limitations"
-        queries = queries or [default_query]
-        # A research track can request one additional investigation. Counts are ceilings, not citation targets.
-        for cycle in range(2):
+        deep = bool(run.config.get("role_configs"))
+        plan = await self.store.by_key(run_id, "research_plan", team) if deep else None
+        track_plan = (
+            next((item for item in plan.data["tracks"] if item["track"] == track), None) if plan else None
+        )
+        queries = queries or (track_plan["search_queries"][:2] if track_plan else [default_query])
+        # Up to three evidence-led cycles; adequacy and diminishing returns can stop earlier.
+        cycles = 3 if deep and stage == "research" else 2
+        for cycle in range(cycles):
             stop = False
             for query_index, query in enumerate(queries[:2]):
                 try:
                     hits = await self.gateway.search(
-                        run_id, f"{key}:search:{cycle}:{query_index}", query, team=team
+                        run_id,
+                        f"{key}:search:{cycle}:{query_index}",
+                        query,
+                        team=team,
+                        model_role="researcher" if deep else "search",
                     )
                     await asyncio.gather(
                         *(
@@ -275,17 +286,20 @@ class Workflow:
                     "assigned_position": frame[f"position_{team.lower()}"]
                     if run.config["mode"] != "single"
                     else "Neutral researcher: assess both positions and alternatives",
-                    "instruction": "Build a research briefing. Include strongest claims, evidence, contrary findings, what the other side gets right, weighting reasons, reversal conditions, and omitted questions. If more decisive research is needed, set stop_reason=continue and next_queries. Research limits must be disclosed.",
+                    "instruction": "Build a rigorous research briefing, not a persuasive essay. Trace major claims to original studies, datasets, or authoritative reviews; inspect their methods and dates. Actively search for the strongest disconfirming evidence and plausible competing explanations. Compare effect sizes, base rates, denominators, populations, and implementation constraints. Treat repeated reports of one study as one evidence source. Separate causal evidence from associations, predictions, and values. Explain why sources deserve different weights and what evidence would reverse the conclusion. Name important access gaps. Request another cycle only when a specific unresolved question could materially change the assessment; stop on adequate coverage or diminishing material findings, not a citation count. Include scoped claims and registered passage IDs. Research limits must be disclosed.",
+                    "research_plan": plan.data if plan else None,
+                    "track_plan": track_plan,
+                    "model_role": "researcher" if deep else "debater",
                 }
             )
-            role = (
-                "single_researcher"
-                if run.config["mode"] == "single"
-                else f"{team}_debater_{['background', 'competing explanations', 'consequences'].index(track) + 1 if track in ['background', 'competing explanations', 'consequences'] else 2}"
-            )
+            tracks = ["background", "competing explanations", "consequences"]
+            debater = 1 if deep else tracks.index(track) + 1 if track in tracks else 2
+            role = "single_researcher" if run.config["mode"] == "single" else f"{team}_debater_{debater}"
             result = await self.invoke(run_id, f"{key}:cycle:{cycle}", role, context, Submission, team=team)
-            if cycle == 0 and not stop and result.stop_reason == "continue" and result.next_queries:
-                await self.commit_submission(run_id, f"{key}:interim", result, team, stage)
+            if cycle < cycles - 1 and not stop and result.stop_reason == "continue" and result.next_queries:
+                await self.commit_submission(
+                    run_id, f"{key}:interim" if cycle == 0 else f"{key}:interim:{cycle}", result, team, stage
+                )
                 queries = result.next_queries
                 continue
             if result.stop_reason == "continue":
@@ -301,8 +315,46 @@ class Workflow:
         if run.config.get("reuse_parent"):
             await self.import_parent(run_id, run.config["reuse_parent"])
             return
+        teams = ["A"] if run.config["mode"] == "single" else ["A", "B"]
+        if run.config.get("role_configs"):
+
+            async def plan_research(team):
+                if await self.store.by_key(run_id, "research_plan", team):
+                    return
+                frame = (await self.current_frame(run_id)).data
+                output = await self.invoke(
+                    run_id,
+                    f"research_plan:{team}",
+                    f"{team}_debater_1",
+                    {
+                        "original_question": run.question,
+                        "team": team,
+                        "stage": "research",
+                        "current_framing": frame,
+                        "assigned_position": frame[f"position_{team.lower()}"]
+                        if run.config["mode"] != "single"
+                        else "Assess both positions neutrally",
+                        "model_role": "researcher",
+                        "instruction": "Plan an independent adversarial research investigation before drawing conclusions. Cover each track exactly once: background, competing explanations, consequences. Form precise searches for primary evidence, strong contrary findings, and external-validity/implementation limits. Identify decisive falsifiable tests, evidence standards, methodological pitfalls, and stopping conditions. Do not assume your assigned side is correct; seek the best case against it. Do not fabricate findings or citations. Prioritize queries by how much they could change the eventual decision.",
+                    },
+                    ResearchPlan,
+                    team=team,
+                )
+                if {track.track for track in output.tracks} != {
+                    "background",
+                    "competing explanations",
+                    "consequences",
+                }:
+                    raise EvidenceError("Research plan must cover each track exactly once")
+                await self.store.put(
+                    run_id, "research_plan", team, output.model_dump(), team=team, stage="research"
+                )
+
+            results = await asyncio.gather(*(plan_research(team) for team in teams), return_exceptions=True)
+            for result in results:
+                if isinstance(result, BaseException):
+                    raise result
         for track in ["background", "competing explanations", "consequences"]:
-            teams = ["A"] if run.config["mode"] == "single" else ["A", "B"]
             results = await asyncio.gather(
                 *(self.research_task(run_id, team, track, "research") for team in teams),
                 return_exceptions=True,
@@ -318,6 +370,8 @@ class Workflow:
             context["instruction"] = (
                 "Synthesize your independent team's research into a complete initial briefing. Address the strongest contrary evidence and reversal conditions. Cite existing claims rather than duplicating them."
             )
+            if run.config.get("role_configs"):
+                context["model_role"] = "researcher"
             briefing = await self.invoke(
                 run_id, f"briefing:{team}", f"{team}_debater_1", context, Submission, team=team
             )
@@ -589,7 +643,9 @@ class Workflow:
             try:
                 if empirical:
                     query = f"{empirical[0].data['text']} original data contradictory evidence methodological critique"
-                    hits = await self.gateway.search(run_id, f"{key}:independent_search", query, final=final)
+                    hits = await self.gateway.search(
+                        run_id, f"{key}:independent_search", query, final=final, model_role="checker"
+                    )
                     await asyncio.gather(
                         *(
                             self.evidence.retrieve(run_id, h.url, stage="checks", query=query)

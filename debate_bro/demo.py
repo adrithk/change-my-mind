@@ -17,6 +17,7 @@ from .schemas import (
     Investigation,
     Judgment,
     Recommendation,
+    ResearchPlan,
     SearchHit,
     SearchResults,
     Submission,
@@ -107,6 +108,32 @@ class DemoProvider:
                 assumptions=["The intended actor is a library administrator considering a reversible pilot."],
                 overlooked_perspectives=["Residents who cannot reach the library in the evening"],
                 clarification_needed=None,
+            )
+        elif schema is ResearchPlan:
+            output = ResearchPlan(
+                strategy="Inspect the synthetic pilot, survey, and costs; actively test the assigned position.",
+                tracks=[
+                    {
+                        "track": track,
+                        "search_queries": [
+                            f"Fictional library {track} primary evidence",
+                            f"Fictional library {track} contrary findings",
+                        ],
+                        "evidence_standard": "Use the original fictional records; do not infer causal effects.",
+                        "pitfalls": [
+                            "Aggregate denominator",
+                            "Unrepresentative survey",
+                            "Repeated pilot coverage",
+                        ],
+                    }
+                    for track in ["background", "competing explanations", "consequences"]
+                ],
+                decisive_tests=[
+                    "Would observed attendance justify a reversible pilot given unknown generalizability?"
+                ],
+                stop_criteria=[
+                    "All fixture limitations are recorded; extra fixture searches add no evidence."
+                ],
             )
         elif schema is Submission:
             stage, track = context.get("stage"), context.get("track", "")

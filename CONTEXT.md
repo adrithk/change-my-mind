@@ -47,20 +47,31 @@ Official integration references:
 
 ## Model and role configuration
 
-The accepted initial plan assigns **GPT-6.1 Sol, medium reasoning to every specialist**. Both teams must use identical configuration and limits. The UI defaults to that exact model and does not silently substitute an unavailable one; the user can explicitly select another model in their account catalog.
+The user replaced the original uniform model setup with **research-first role scaling** and explicitly confirmed **GPT-6 Astra at xhigh** for the two initial lead researchers. Both models were verified in the connected account's model catalog. Both teams must use identical configuration and resource limits.
+
+| Work | Model | Reasoning |
+| --- | --- | --- |
+| Two lead researchers, research planning, initial searches/briefings, targeted research follow-up | GPT-6 Astra | xhigh |
+| Debate rounds | GPT-6.1 Sol | high |
+| Fact checker, checking searches, final evidence-consistency check | GPT-6.1 Sol | xhigh |
+| Substantive judge and optional suite comparison | GPT-6 Astra | high |
+| Decision analyst and dispute planner | GPT-6.1 Sol | high |
+| Framing and coverage helpers | GPT-6.1 Sol | medium |
+
+`model_policy.py` defines the presets. `Store.create_run` freezes `role_configs` and `pricing_by_model`. Gateway resolves each call by role/context and logs the exact configuration, reasoning, tokens and actual model. Do not change settings mid-run. Old runs without a role map retain their original uniform configuration; API `model_policy: "uniform"` remains available for comparisons. Required account models are checked before queuing, without silent substitution or billing fallback. The minimal UI puts assignments inside Connection. High-effort work can use substantially more shared allowance; request limits remain unchanged.
 
 Nine specialist roles:
-1. Team A: background researcher/debater.
-2. Team A: competing explanations researcher/debater.
-3. Team A: implementation consequences researcher/debater.
-4. Team B: background researcher/debater.
-5. Team B: competing explanations researcher/debater.
-6. Team B: implementation consequences researcher/debater.
+1. Team A: lead researcher and opening debater.
+2. Team A: responses/rebuttals debater.
+3. Team A: corrected closing debater.
+4. Team B: lead researcher and opening debater.
+5. Team B: responses/rebuttals debater.
+6. Team B: corrected closing debater.
 7. Independent-context fact checker.
 8. Substantive judge.
 9. Decision analyst.
 
-Framing, neutral coverage review, investigation planning, consistency checking, and suite comparison are bounded helpers. They use the same frozen model configuration. These are roles/context boundaries within the application, not nine independently trained models. Shared model-family limitations must remain disclosed.
+Framing, neutral coverage review, investigation planning, consistency checking, and suite comparison are bounded helpers with the assignments above. These are roles/context boundaries within the application, not nine independently trained models. Shared model-family limitations must remain disclosed.
 
 ## Architecture and files
 
@@ -69,6 +80,7 @@ Framing, neutral coverage review, investigation planning, consistency checking, 
 - `store.py`: SQLAlchemy + SQLite records, dependencies, visibility, publication barriers, atomic usage reservations and corrections.
 - `chatgpt_auth.py`: protected OAuth sessions, account catalog.
 - `providers.py`: provider-neutral model/research interfaces, OpenAI API adapter, ChatGPT plan adapter, invocation caching and accounting gateway.
+- `model_policy.py`: per-role model/reasoning presets, frozen assignment resolution and legacy uniform fallback.
 - `evidence.py`: public HTTP source retrieval, readable HTML/PDF extraction, exact quotations, passage registration, local original files.
 - `workflow.py`: persistent LangGraph workflow. Checkpoints reference records, not full source documents.
 - `jobs.py`: durable queue, one active topic, paired team tasks, cancellation/recovery, optional suites.
@@ -81,7 +93,7 @@ Framing, neutral coverage review, investigation planning, consistency checking, 
 ## Workflow and evidence invariants
 
 1. Preserve original question; make provisional issue map, working positions, evaluation principles.
-2. Each team's three researchers independently cover background, explanations, and consequences.
+2. Two independent lead researchers first create private search plans, then each covers background, explanations, and consequences. Plans specify primary-source standards, disconfirming searches, methodological pitfalls, decisive tests, and stopping conditions. Up to three evidence-led cycles per initial track, within equal existing resource limits; adequate coverage or diminishing material findings can stop earlier.
 3. Commit both private briefings before either can see the other.
 4. Neutral coverage review creates a shared dossier preserving disagreements and access gaps.
 5. Paired openings, responses, and one rebuttal exchange. Freeze inputs and publish paired valid drafts atomically. Retain successful private drafts if the other fails.
@@ -109,3 +121,4 @@ Deferred: hosted deployment, accounts for app users, authenticated/paywalled res
 - The current UI receives a production build and one browser smoke flow (topic input, connection setup, complete demo, evidence link, export, mobile fit). Routine checks use mocks/synthetic evidence and incur no model charges.
 - **Real account authorization and a live research pilot are not established by these offline tests.** Complete the user's OAuth grant, verify the account model catalog and included-only account setting, then try one bounded topic. Report real failures rather than claiming the synthetic demo validates research quality.
 - Keep future changes focused. Do not rerun paid robustness suites or extensive benchmarks without a separately initiated aggregate allowance.
+- Role-scaling validation: 17 focused offline checks passed, including a complete synthetic workflow that verifies exactly two Astra-xhigh lead research roles, role-specific debate/check/judge settings, original-run fallback and persisted search routing. Production frontend build passed. No live inference or paid evaluation was needed for this change.

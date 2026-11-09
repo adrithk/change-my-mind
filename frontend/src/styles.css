@@ -6,9 +6,9 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  --background: #0b1428;
-  --surface: #111f38;
-  --border: #2c3d5d;
+  --background: #060d1c;
+  --surface: #0c172b;
+  --border: #233451;
   --text: #f2f5fb;
   --muted: #a5b2ca;
   --purple: #c1b1ec;
@@ -66,7 +66,7 @@ input:focus-visible {
   align-items: center;
   gap: 20px;
   color: white;
-  background: #080f20;
+  background: #040a16;
   border-bottom: 1px solid #1b2a45;
 }
 .wordmark {
@@ -76,9 +76,6 @@ input:focus-visible {
   text-decoration: none;
   letter-spacing: -0.9px;
   white-space: nowrap;
-}
-.wordmark span {
-  color: var(--rose);
 }
 .header-actions {
   display: flex;
@@ -226,6 +223,22 @@ textarea::placeholder {
   display: flex;
   gap: 20px;
   margin: 15px 0;
+}
+.role-models {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin: 16px 0;
+}
+.role-models th,
+.role-models td {
+  padding: 9px 8px 9px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.role-models th {
+  color: var(--text);
+  font-weight: 550;
 }
 p {
   line-height: 1.75;

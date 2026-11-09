@@ -54,7 +54,14 @@ function Refs({
       {ids.map((id) => {
         const record = records.find((r) => r.id === id);
         return record ? (
-          <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); reveal(id); }}>
+          <a
+            key={id}
+            href={`#${id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              reveal(id);
+            }}
+          >
             {human(record.kind)} {id.slice(-5)}
           </a>
         ) : null;
@@ -77,7 +84,7 @@ export default function App() {
   const [models, setModels] = useState<
     Array<{ slug: string; display_name: string }>
   >([]);
-  const [model, setModel] = useState("gpt-6.1-sol");
+  const model = "gpt-6.1-sol";
   const [question, setQuestion] = useState("");
   const [selected, setSelected] = useState(location.hash.slice(1));
   const [run, setRun] = useState<RunView>();
@@ -87,6 +94,12 @@ export default function App() {
   const [welcome, setWelcome] = useState(false);
   const [clarification, setClarification] = useState("");
   const connected = Boolean(settings?.chatgpt.active?.plan_enabled);
+  const profiles = settings?.role_profiles || {};
+  const modelsReady =
+    Object.values(profiles).length > 0 &&
+    Object.values(profiles).every((p) =>
+      models.some((m) => m.slug === p.model),
+    );
   const records = run?.records || [];
   const latest = (kind: string): Doc | undefined =>
     [...records]
@@ -209,6 +222,7 @@ export default function App() {
         budget_usd: 15,
         request_limit: 80,
         mode: "full",
+        model_policy: "research_first",
       });
       setRun(created);
       select(created.id);
@@ -270,7 +284,7 @@ export default function App() {
             setQuestion("");
           }}
         >
-          debate bro<span>.</span>
+          debate bro
         </a>
         <div className="header-actions">
           {history.length > 0 && (
@@ -323,7 +337,7 @@ export default function App() {
                   busy ||
                   active ||
                   !connected ||
-                  !models.some((m) => m.slug === model) ||
+                  !modelsReady ||
                   question.trim().length < 5
                 }
               >
@@ -357,29 +371,44 @@ export default function App() {
             </button>
           </div>
           <details className="settings">
-            <summary>Model & connection</summary>
+            <summary>Connection</summary>
             <div className="settings-content">
-              <label>
-                Model{" "}
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  disabled={!models.length}
-                >
-                  <option value="gpt-6.1-sol">GPT-6.1 Sol</option>
-                  {models
-                    .filter((m) => m.slug !== "gpt-6.1-sol")
-                    .map((m) => (
-                      <option key={m.slug} value={m.slug}>
-                        {m.display_name}
-                      </option>
-                    ))}
-                </select>
-              </label>
               <p>
-                All nine roles use <strong>{model}</strong> with medium
-                reasoning: six debaters, a fact checker, a judge, and a decision
-                analyst. Both teams have equal limits.
+                Two independent lead researchers use Astra at xhigh to plan
+                searches, inspect original sources, and investigate contrary
+                evidence. Both teams use identical settings and limits.
+              </p>
+              <table className="role-models">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Model</th>
+                    <th>Reasoning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Two lead researchers", "researcher"],
+                    ["Debaters", "debater"],
+                    ["Fact checker & final check", "checker"],
+                    ["Judge", "judge"],
+                    ["Decision analyst", "analyst"],
+                    ["Dispute planner", "investigator"],
+                    ["Framing & coverage", "helper"],
+                  ].map(([label, role]) => (
+                    <tr key={role}>
+                      <td>{label}</td>
+                      <td>
+                        {profiles[role]?.model.replace("gpt-", "GPT-") || "…"}
+                      </td>
+                      <td>{profiles[role]?.reasoning || "…"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p>
+                Higher reasoning can take longer and consume more of your shared
+                plan allowance.
               </p>
               {connected && (
                 <p>
@@ -395,10 +424,11 @@ export default function App() {
                   for included usage only. Paid API requests are disabled.
                 </p>
               )}
-              {connected && !models.some((m) => m.slug === model) && (
+              {connected && !modelsReady && (
                 <p className="notice">
-                  This model is unavailable for this account. Choose an
-                  available model to continue.
+                  This configuration needs GPT-6 Astra and GPT-6.1 Sol access.
+                  Available models are checked before starting; there is no
+                  silent model substitution.
                 </p>
               )}
               {!!settings?.chatgpt.profiles.length && (
@@ -487,7 +517,11 @@ export default function App() {
             )}
             {judgment ? (
               <section className="outcome">
-                <span className="eyebrow">{run.status === "completed" ? "Final outcome" : "Provisional outcome"}</span>
+                <span className="eyebrow">
+                  {run.status === "completed"
+                    ? "Final outcome"
+                    : "Provisional outcome"}
+                </span>
                 <h2>{judgment.best_supported_position}</h2>
                 <p className="muted">
                   {judgment.confidence} confidence · {judgment.margin} margin
@@ -750,9 +784,6 @@ export default function App() {
             </footer>
           </article>
         )}
-        <footer className="page-footer">
-          debate bro · A conclusion you can question.
-        </footer>
       </main>
       {welcome && (
         <div className="overlay">

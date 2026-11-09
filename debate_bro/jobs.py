@@ -134,6 +134,7 @@ class Jobs:
                 budget_usd=parent.budget_usd,
                 mode=mode,
                 request_limit=parent.config.get("request_limit", 80),
+                model_policy=parent.config.get("model_policy", "uniform"),
             )
             await self.store.create_run(
                 request,
@@ -143,6 +144,8 @@ class Jobs:
                     "parent_run_id": parent_id,
                     "reuse_parent": parent_id if variant == "values" else None,
                     "chatgpt_profile_id": parent.config.get("chatgpt_profile_id"),
+                    "role_configs": parent.config.get("role_configs", {}),
+                    "pricing_by_model": parent.config.get("pricing_by_model", {}),
                 },
             )
         self.wake.set()

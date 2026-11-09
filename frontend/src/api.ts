@@ -8,6 +8,7 @@ export interface Settings {
   demo_question: string;
   subscription_credit_docs: string;
   paid_api_enabled: boolean;
+  role_profiles: Record<string, { model: string; reasoning: string }>;
   chatgpt: {
     profiles: Array<{
       id: string;

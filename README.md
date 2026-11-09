@@ -28,7 +28,7 @@ Choose **Explore a demo** to exercise the entire pipeline without an API key or 
 
 1. Open the app at **http://127.0.0.1:8000** and choose **Continue with ChatGPT**. Select the account with Plus and approve Debate Bro's plan-usage permission on OpenAI's screen. A Free account in your browser can differ from the account signed into Codex.
 2. Open **Manage usage** in the app. In ChatGPT Usage settings, set Debate Bro's **credits allowance to zero** to use included usage only. Account settings, rather than this app, govern credit spending. Do not purchase credits or enable automatic reload to use this route.
-3. Select an account-available model, enter a question, and start research. All roles use the same model and medium reasoning. The app initially prefers `gpt-6.1-sol` when available; availability is checked against your account's catalog.
+3. Enter a question and start research. Both lead researchers use **GPT-6 Astra at xhigh**; judgment uses **Astra high**, fact checking/final consistency use **GPT-6.1 Sol xhigh**, debate/decision analysis/dispute planning use **Sol high**, and framing/coverage use **Sol medium**. Both teams receive identical settings. Astra and Sol availability is checked against your account before starting; no model is silently substituted. The Connection disclosure shows the assignments.
 
 This is OpenAI's [official local personal-project integration](https://developers.openai.com/siwc/token-sharing-open-source). No API key is required. OAuth credentials are saved in `data/chatgpt/credentials.json` with owner-only permissions. They are never exposed to the browser, reports, application records, or source control. Sign-out attempts remote session revocation and clears local tokens while retaining the account registration for reconnection. Do not share this file or include it in support requests.
 
@@ -50,12 +50,14 @@ Settings and defaults:
 | API spending ceiling (only when explicitly enabled) | $15/topic |
 | API cost target | $2–5, unmeasured until real pilots are performed |
 | Follow-up investigation | At most two cycles |
-| Research per track | At most two search-and-read cycles; up to two queries per cycle |
+| Initial research per track | Up to three evidence-led search-and-read cycles; up to two queries per cycle, within equal request/budget allowances |
 | Retry policy | At most two automatic retries for retryable failures |
 | Source fetch | 25-second request timeout, public HTTP(S), up to 20 MB |
 | Robustness suite | Separate, explicitly initiated 180 plan requests or $15 API aggregate ceiling |
 
 The role runner supports bounded requests for additional registered source passages. Sources that require JavaScript, sign-in, a paywall, unsupported media, or OCR remain access gaps. There is no browser-rendering or OCR fallback in v1.
+
+Each side has one lead researcher who first creates a private search plan, then covers background, competing explanations, and consequences. Plans identify primary-source standards, methodological pitfalls, decisive tests, and stopping conditions. Researchers actively seek disconfirming evidence, trace repeated coverage back to underlying studies, and distinguish causal support from associations and value judgments. They stop early on adequate coverage or diminishing material findings; stronger models do not guarantee accurate research. Higher reasoning consumes more shared plan allowance and can take longer. Role configurations and model-specific API price snapshots are frozen per run; old runs retain their prior settings. The typed API supports `model_policy: "uniform"` for explicit uniform-model comparisons.
 
 ## Evidence and execution guarantees
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from .config import PRICE_VERSION, PRICING, SEARCH_PRICE, TERMINAL
 from .errors import BudgetExceeded, Cancelled, EvidenceError
+from .model_policy import freeze_roles
 from .schemas import EventView, RecordView, RunCreate, RunView
 
 
@@ -140,6 +141,13 @@ class Store:
     async def create_run(self, request: RunCreate, *, suite_id=None, extra=None) -> str:
         config = request.model_dump(by_alias=True)
         config.update(extra or {})
+        config.setdefault("role_configs", freeze_roles(config))
+        config.setdefault(
+            "model_policy_version", "research-first-v1" if config["role_configs"] else "uniform-v1"
+        )
+        config["pricing_by_model"] = config.get("pricing_by_model") or {
+            model: dict(rates) for model, rates in PRICING.items()
+        }
         config["pricing_version"] = PRICE_VERSION
         config["pricing"] = dict(PRICING.get(request.model_config_.model, PRICING["gpt-6.1-sol"]))
         config["search_price"] = SEARCH_PRICE

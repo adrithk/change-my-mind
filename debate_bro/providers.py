@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from .config import PRICE_VERSION, PRICING, SEARCH_PRICE
 from .errors import EvidenceError, ProviderFailure
+from .model_policy import invocation_config
 from .schemas import ModelConfig, SearchHit, SearchResults
 from .store import Store
 
@@ -138,6 +139,7 @@ class OpenAIProvider:
             ],
             text_format=schema,
             max_output_tokens=config.max_output_tokens,
+            timeout=config.timeout_seconds,
             store=False,
         )
         return self._result(response, response.output_parsed)
@@ -158,7 +160,8 @@ class OpenAIProvider:
             max_tool_calls=1,
             include=["web_search_call.action.sources"],
             text_format=SearchResults,
-            max_output_tokens=2000,
+            max_output_tokens=config.max_output_tokens,
+            timeout=config.timeout_seconds,
             store=False,
         )
         allowed = set()
@@ -284,14 +287,18 @@ class Gateway:
         if old and old.data.get("output"):
             return schema.model_validate(old.data["output"])
         run = await self.store.get_run(run_id, records=False)
-        config = ModelConfig.model_validate(run.config["model_config"])
+        config = invocation_config(run.config, role, context)
         demo = config.provider == "demo"
         plan = config.provider == "chatgpt"
         if not demo and not plan and config.model not in PRICING:
             raise ProviderFailure(
                 "No verified price configuration for this model; add pricing before running it"
             )
-        price = run.config.get("pricing") or PRICING.get(config.model, PRICING["gpt-6.1-sol"])
+        price = (
+            run.config.get("pricing_by_model", {}).get(config.model)
+            or run.config.get("pricing")
+            or PRICING.get(config.model, PRICING["gpt-6.1-sol"])
+        )
         search_price = run.config.get("search_price", SEARCH_PRICE)
         input_tokens = 0 if demo else self.token_count(SYSTEM_PROMPT + json.dumps(context)) + 6000
         if input_tokens > 100_000:
@@ -304,7 +311,7 @@ class Gateway:
             if demo or plan
             else (
                 (input_tokens + (128000 if search else 0)) * price["input"]
-                + (2000 if search else config.max_output_tokens) * price["output"]
+                + config.max_output_tokens * price["output"]
             )
             / 1e6
             + (search_price if search else 0)
@@ -325,6 +332,7 @@ class Gateway:
                     details={
                         "role": role,
                         "model": config.model,
+                        "reasoning": config.reasoning,
                         "pricing_version": PRICE_VERSION,
                         "search": search,
                         "billing": "chatgpt_plan" if plan else "demo" if demo else "api",
@@ -374,7 +382,7 @@ class Gateway:
                     operation,
                     {
                         "role": role,
-                        "prompt_version": "1",
+                        "prompt_version": "2",
                         "model_config": config.model_dump(),
                         "response_id": result.response_id,
                         "actual_model": result.actual_model,
@@ -390,7 +398,14 @@ class Gateway:
                 return result.output
         raise ProviderFailure("Retry allowance exhausted")
 
-    async def search(self, run_id, key, query, *, team=None, final=False):
+    async def search(self, run_id, key, query, *, team=None, final=False, model_role="search"):
         return await self.invoke(
-            run_id, key, "search", {"query": query}, SearchResults, team=team, final=final, search=True
+            run_id,
+            key,
+            "search",
+            {"query": query, "model_role": model_role},
+            SearchResults,
+            team=team,
+            final=final,
+            search=True,
         )
