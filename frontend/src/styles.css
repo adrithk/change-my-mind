@@ -6,8 +6,16 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: #101114;
-  background: #fff;
+  --background: #0b1428;
+  --surface: #111f38;
+  --border: #2c3d5d;
+  --text: #f2f5fb;
+  --muted: #a5b2ca;
+  --purple: #c1b1ec;
+  --rose: #e49aaa;
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,6 +25,7 @@
 }
 body {
   margin: 0;
+  min-height: 100vh;
 }
 button,
 input,
@@ -37,7 +46,7 @@ button:disabled {
   opacity: 0.42;
 }
 a {
-  color: #302953;
+  color: var(--purple);
   text-underline-offset: 3px;
 }
 button:focus-visible,
@@ -46,7 +55,7 @@ select:focus-visible,
 summary:focus-visible,
 textarea:focus-visible,
 input:focus-visible {
-  outline: 2px solid #5e48ac;
+  outline: 2px solid var(--purple);
   outline-offset: 4px;
 }
 .header {
@@ -57,7 +66,8 @@ input:focus-visible {
   align-items: center;
   gap: 20px;
   color: white;
-  background: #0b1122;
+  background: #080f20;
+  border-bottom: 1px solid #1b2a45;
 }
 .wordmark {
   color: white;
@@ -68,7 +78,7 @@ input:focus-visible {
   white-space: nowrap;
 }
 .wordmark span {
-  color: #bd596a;
+  color: var(--rose);
 }
 .header-actions {
   display: flex;
@@ -78,16 +88,16 @@ input:focus-visible {
 .header-actions select {
   max-width: 220px;
   background: transparent;
-  color: #c9cbd3;
+  color: var(--muted);
   border: 0;
   font-size: 12px;
 }
 .header-actions option {
-  color: #111;
-  background: #fff;
+  color: var(--text);
+  background: var(--surface);
 }
 .connect {
-  border: 1px solid #505566;
+  border: 1px solid var(--border);
   border-radius: 5px;
   background: transparent;
   color: white;
@@ -110,7 +120,8 @@ h1 {
   line-height: 1.2;
 }
 .composer form {
-  border: 1.5px solid #15171b;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -122,14 +133,14 @@ textarea {
   max-height: 400px;
   padding: 21px 22px;
   border: 0;
-  background: white;
-  color: #111;
+  background: transparent;
+  color: var(--text);
   font-size: 17px;
   line-height: 1.6;
   outline-offset: -3px !important;
 }
 textarea::placeholder {
-  color: #96969e;
+  color: #8e9eb9;
 }
 .composer-bottom {
   display: flex;
@@ -140,13 +151,13 @@ textarea::placeholder {
 }
 .composer-bottom > span {
   font-size: 12px;
-  color: #777982;
+  color: var(--muted);
 }
 .primary {
-  border: 1px solid #111;
+  border: 1px solid #e8eef9;
   border-radius: 4px;
-  background: #111;
-  color: white;
+  background: #e8eef9;
+  color: #10203d;
   padding: 11px 20px;
   display: inline-flex;
   align-items: center;
@@ -156,14 +167,14 @@ textarea::placeholder {
   font-weight: 550;
 }
 .primary:hover:not(:disabled) {
-  background: #25203d;
+  background: #fff;
 }
 .composer-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  color: #757680;
+  color: var(--muted);
   font-size: 11px;
   padding-top: 14px;
 }
@@ -172,7 +183,7 @@ textarea::placeholder {
 .run-status button {
   border: 0;
   background: none;
-  color: #31284e;
+  color: var(--purple);
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -185,7 +196,7 @@ textarea::placeholder {
   font-size: 12px;
   border: 0;
   padding: 17px 0 0;
-  color: #777982;
+  color: var(--muted);
 }
 .settings summary {
   font-size: 11px;
@@ -194,7 +205,7 @@ textarea::placeholder {
 .settings-content {
   padding: 12px 0;
   max-width: 620px;
-  color: #555763;
+  color: var(--muted);
 }
 .settings-content label {
   display: flex;
@@ -206,8 +217,9 @@ textarea::placeholder {
   padding: 7px;
   min-width: 160px;
   max-width: 100%;
-  border: 1px solid #d7d7df;
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   border-radius: 3px;
 }
 .inline-actions {
@@ -242,13 +254,13 @@ li {
   padding: 3px 0 7px;
 }
 .muted {
-  color: #7c7d86;
+  color: var(--muted);
   font-size: 12px;
 }
 .notice {
   padding: 12px 0;
-  border-top: 1px solid #ddd5dc;
-  color: #8b3045;
+  border-top: 1px solid #52334d;
+  color: var(--rose);
   font-size: 13px;
   display: flex;
   align-items: start;
@@ -266,15 +278,15 @@ li {
   gap: 15px;
   align-items: center;
   font-size: 11px;
-  color: #7b7c85;
+  color: var(--muted);
   padding: 14px 0;
-  border-top: 1px solid #e7e6eb;
+  border-top: 1px solid var(--border);
 }
 .run-status > span:first-child {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #4d4267;
+  color: var(--purple);
   margin-right: auto;
 }
 .outcome {
@@ -284,7 +296,7 @@ li {
   font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #60527f;
+  color: var(--purple);
   font-weight: 650;
   display: block;
   margin-bottom: 12px;
@@ -295,7 +307,7 @@ li {
   letter-spacing: -0.9px;
 }
 .takeaway {
-  border-left: 2px solid #9d405e;
+  border-left: 2px solid var(--rose);
   padding-left: 20px;
   margin: 26px 0;
 }
@@ -304,7 +316,7 @@ li {
 }
 .debate-result > section:not(.outcome) {
   padding: 28px 0;
-  border-top: 1px solid #e7e6eb;
+  border-top: 1px solid var(--border);
 }
 .sides {
   display: grid;
@@ -317,11 +329,11 @@ li {
   line-height: 1.6;
 }
 .sides > div:nth-child(2) .eyebrow {
-  color: #98405a;
+  color: var(--rose);
 }
 details {
   padding: 19px 0;
-  border-top: 1px solid #e7e6eb;
+  border-top: 1px solid var(--border);
 }
 summary {
   cursor: pointer;
@@ -336,10 +348,10 @@ details details {
 details details summary {
   font-size: 12px;
   font-weight: 450;
-  color: #555763;
+  color: var(--muted);
 }
 blockquote {
-  border-left: 2px solid #c3bacf;
+  border-left: 2px solid #7e6aab;
   padding: 6px 18px;
   margin: 15px 0;
   font-size: 13px;
@@ -353,13 +365,13 @@ blockquote {
   margin-left: 4px;
 }
 .refs a {
-  color: #665180;
+  color: var(--purple);
 }
 :target {
   scroll-margin-top: 35px;
 }
 .report-actions {
-  border-top: 1px solid #e7e6eb;
+  border-top: 1px solid var(--border);
   padding: 24px 0;
   display: flex;
   flex-wrap: wrap;
@@ -373,7 +385,7 @@ blockquote {
 .page-footer {
   padding: 54px 0 25px;
   font-size: 10px;
-  color: #9898a0;
+  color: #899ab7;
 }
 .clarification {
   display: grid;
@@ -383,19 +395,22 @@ blockquote {
 }
 .clarification input {
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
 }
 .overlay {
   position: fixed;
   inset: 0;
   display: grid;
   place-items: center;
-  background: #070c1b80;
+  background: #020713b3;
   padding: 24px;
   z-index: 20;
 }
 .overlay section {
-  background: white;
+  background: var(--surface);
+  border: 1px solid var(--border);
   padding: 32px;
   max-width: 470px;
   border-radius: 6px;

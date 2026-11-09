@@ -6,9 +6,9 @@ Updated November 8, 2026. This file is the handoff for continued iteration. Read
 
 - Build a local, single-user research-first debate system that handles broad questions, researches opposing positions, checks material claims, judges substantive support, and offers one practical takeaway with inspectable evidence.
 - Keep iteration quick and changes simple. Use focused smoke checks; avoid adding test infrastructure or running paid benchmarks without a separate explicit action.
-- Product name: **debate bro**. UI: white background, black text, navy header, restrained dark purple/red accents. One topic box asking **What topic do you want to debate?**. Put the outcome directly underneath, then the opposing points and research summary. Evidence and transcripts stay expandable. No dashboard/sidebar/card grid.
+- Product name: **debate bro**. Latest UI preference: primarily navy, with white text, navy input surfaces, and restrained purple/red accents. One topic box asking **What topic do you want to debate?**. Put the outcome directly underneath, then the opposing points and research summary. Evidence and transcripts stay expandable. No dashboard/sidebar/card grid.
 - Use the user's existing **ChatGPT Plus** plan. Earlier references to Pro were clarified to mean Plus. Do not assume Pro benefits or spend API funds.
-- Create the GitHub repository as `adrithk/debate-bro`; GitHub repository names cannot contain spaces. Private is the default because public visibility was not requested.
+- GitHub repository: `adrithk/debate-bro`. It is now **public**, as explicitly requested after creation. GitHub repository names cannot contain spaces.
 
 ## Running locally
 
