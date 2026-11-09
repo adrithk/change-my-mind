@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from typing import Protocol
 
+import httpx
 import openai
 import tiktoken
 from pydantic import BaseModel
@@ -146,6 +147,20 @@ class OpenAIProvider:
         )
         return self._result(response, response.output_parsed)
 
+    @staticmethod
+    def search_urls(items):
+        urls = set()
+        for item in items:
+            if item.type == "web_search_call":
+                for source in getattr(item.action, "sources", None) or []:
+                    urls.add(source.url)
+            elif item.type == "message":
+                for content in item.content:
+                    for annotation in getattr(content, "annotations", []):
+                        if annotation.type == "url_citation":
+                            urls.add(annotation.url)
+        return urls
+
     async def discover(self, query, config):
         response = await self._call(
             model=config.model,
@@ -153,12 +168,12 @@ class OpenAIProvider:
             input=[
                 {
                     "role": "system",
-                    "content": "Search the public web for original evidence, credible reviews, contradictory findings, and methodological critiques. Return source URLs from actual search results; no invented URLs.",
+                    "content": "Perform one focused public-web lookup for this research query. Find original evidence, credible reviews, contradictory findings, and methodological critiques. Return at most five source URLs from actual search results. Do not write an essay or conduct the full investigation here: detailed evaluation happens in a separate research step. Stop once you have useful discovery results. Never invent URLs or substitute remembered links for search results.",
                 },
                 {"role": "user", "content": query},
             ],
             tools=[{"type": "web_search", "search_context_size": "low"}],
-            tool_choice="required",
+            tool_choice="auto",
             max_tool_calls=1,
             include=["web_search_call.action.sources"],
             text_format=SearchResults,
@@ -166,17 +181,9 @@ class OpenAIProvider:
             timeout=config.timeout_seconds,
             store=False,
         )
-        allowed = set()
-        for item in response.output:
-            if item.type == "web_search_call":
-                for source in getattr(item.action, "sources", None) or []:
-                    allowed.add(source.url)
-            elif item.type == "message":
-                for content in item.content:
-                    for annotation in getattr(content, "annotations", []):
-                        if annotation.type == "url_citation":
-                            allowed.add(annotation.url)
-        hits = [h for h in response.output_parsed.hits if h.url in allowed]
+        allowed = self.search_urls(response.output) | set(getattr(response, "discovery_source_urls", []))
+        parsed = response.output_parsed or SearchResults(hits=[])
+        hits = [h for h in parsed.hits if h.url in allowed]
         if not hits:
             hits = [SearchHit(url=url, title=url) for url in sorted(allowed)[:5]]
         return self._result(response, SearchResults(hits=hits))
@@ -228,7 +235,13 @@ class ChatGPTPlanProvider(OpenAIProvider):
             ) as client:
                 async with client.responses.stream(**kwargs) as stream:
                     completed = False
+                    streamed_urls = set()
                     async for event in stream:
+                        if (
+                            kwargs.get("text_format") is SearchResults
+                            and event.type == "response.output_item.done"
+                        ):
+                            streamed_urls.update(self.search_urls([event.item]))
                         if event.type == "response.completed":
                             completed = True
                         elif event.type == "response.failed":
@@ -242,7 +255,11 @@ class ChatGPTPlanProvider(OpenAIProvider):
                             uncertain=True,
                         )
                     response = await stream.get_final_response()
-                    if response.output_parsed is None:
+                    if streamed_urls:
+                        response = response.model_copy(
+                            update={"discovery_source_urls": sorted(streamed_urls)}
+                        )
+                    if response.output_parsed is None and kwargs.get("text_format") is not SearchResults:
                         raise ProviderFailure(
                             "ChatGPT refused or returned invalid structured output; partial work preserved.",
                             uncertain=True,
@@ -256,7 +273,12 @@ class ChatGPTPlanProvider(OpenAIProvider):
                 message=getattr(error, "message", None),
                 param=getattr(error, "param", None),
             ) from error
-        except (openai.APITimeoutError, openai.APIConnectionError) as error:
+        except (
+            openai.APITimeoutError,
+            openai.APIConnectionError,
+            httpx.TimeoutException,
+            httpx.NetworkError,
+        ) as error:
             raise ProviderFailure(
                 "ChatGPT connection interrupted; outcome unknown. No API fallback was attempted.",
                 uncertain=True,
@@ -307,7 +329,9 @@ class Gateway:
     async def invoke(self, run_id, operation, role, context, schema, *, team=None, final=False, search=False):
         old = await self.store.by_key(run_id, "invocation", operation)
         if old and old.data.get("output"):
-            return schema.model_validate(old.data["output"])
+            cached = schema.model_validate(old.data["output"])
+            if not search or cached.hits:
+                return cached
         run = await self.store.get_run(run_id, records=False)
         config = invocation_config(run.config, role, context)
         demo = config.provider == "demo"
@@ -357,6 +381,7 @@ class Gateway:
                         "reasoning": config.reasoning,
                         "pricing_version": PRICE_VERSION,
                         "search": search,
+                        "query": context.get("query"),
                         "billing": "chatgpt_plan" if plan else "demo" if demo else "api",
                     },
                 )
@@ -386,6 +411,8 @@ class Gateway:
                     / 1e6
                     + result.searches * search_price
                 )
+                empty_search = search and not result.output.hits
+                search_error = "Search returned no verifiable source URLs. Research has stopped; no unsupported assessment was generated."
                 await self.store.settle(
                     usage_id,
                     cost,
@@ -396,8 +423,12 @@ class Gateway:
                         "searches": result.searches,
                         "response_id": result.response_id,
                         "actual_model": result.actual_model,
+                        "discovered_urls": len(result.output.hits) if search else None,
+                        **({"error": search_error} if empty_search else {}),
                     },
                 )
+                if empty_search:
+                    raise ProviderFailure(search_error)
                 await self.store.put(
                     run_id,
                     "invocation",
@@ -421,6 +452,9 @@ class Gateway:
         raise ProviderFailure("Retry allowance exhausted")
 
     async def search(self, run_id, key, query, *, team=None, final=False, model_role="search"):
+        old = await self.store.by_key(run_id, "invocation", key)
+        if old and (old.data.get("output") or {}).get("hits") == []:
+            key += ":source-recovery:v2"
         return await self.invoke(
             run_id,
             key,

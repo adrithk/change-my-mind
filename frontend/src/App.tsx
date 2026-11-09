@@ -117,6 +117,12 @@ export default function App() {
   const active = Boolean(run && !done.has(run.status));
   const synthetic = (run?.config.model_config as Doc)?.provider === "demo";
 
+  useEffect(() => {
+    const syncHash = () => setSelected(location.hash.slice(1));
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
+
   async function refreshSettings() {
     setSettings(await api.settings());
   }

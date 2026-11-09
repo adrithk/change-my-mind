@@ -232,6 +232,59 @@ async def test_sse_usage_limit_is_reported_without_retry_or_api_fallback(store):
     assert len(usage) == 1 and usage[0]["state"] == "uncertain"
 
 
+@respx.mock
+async def test_search_tool_sources_are_usable_without_model_json_summary():
+    class Auth:
+        async def access_token(self, profile):
+            return "plan-token"
+
+    payload = response_json(
+        ConsistencyReview(consistent=True, issues=[], recommendation_consistent=True), search=True
+    )
+    payload["output"] = payload["output"][:1]
+    events = [
+        {
+            "type": "response.created",
+            "sequence_number": 0,
+            "response": {**payload, "status": "in_progress", "output": []},
+        },
+        {"type": "response.completed", "sequence_number": 1, "response": payload},
+    ]
+    stream = "".join("event: " + e["type"] + "\ndata: " + json.dumps(e) + "\n\n" for e in events)
+    respx.post(RESOURCE + "/responses").respond(
+        200, content=stream, headers={"Content-Type": "text/event-stream"}
+    )
+    provider = ChatGPTPlanProvider(Auth(), "saved-profile")
+    result = await provider.discover("Primary evidence lookup", ModelConfig())
+    assert [hit.url for hit in result.output.hits] == ["https://example.org/study"]
+    assert result.searches == 1 and result.input_tokens == 100
+
+
+@respx.mock
+async def test_search_preserves_sources_from_stream_when_terminal_output_is_empty():
+    class Auth:
+        async def access_token(self, profile):
+            return "plan-token"
+
+    payload = response_json(
+        ConsistencyReview(consistent=True, issues=[], recommendation_consistent=True), search=True
+    )
+    item = payload["output"][0]
+    payload["output"] = []
+    events = [
+        {"type": "response.created", "sequence_number": 0, "response": {**payload, "status": "in_progress"}},
+        {"type": "response.output_item.added", "sequence_number": 1, "output_index": 0, "item": item},
+        {"type": "response.output_item.done", "sequence_number": 2, "output_index": 0, "item": item},
+        {"type": "response.completed", "sequence_number": 3, "response": payload},
+    ]
+    stream = "".join("event: " + e["type"] + "\ndata: " + json.dumps(e) + "\n\n" for e in events)
+    respx.post(RESOURCE + "/responses").respond(
+        200, content=stream, headers={"Content-Type": "text/event-stream"}
+    )
+    result = await ChatGPTPlanProvider(Auth(), "saved-profile").discover("Primary sources", ModelConfig())
+    assert [hit.url for hit in result.output.hits] == ["https://example.org/study"]
+
+
 async def test_plan_concurrent_request_reservation_and_final_reserve(store):
     run = await store.create_run(RunCreate(question="Plan concurrency test", request_limit=20))
     for i in range(7):

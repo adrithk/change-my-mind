@@ -122,6 +122,45 @@ async def test_uncertain_request_holds_reservation_and_does_not_retry(store):
     assert usage["state"] == "uncertain" and usage["cost_usd"] == usage["reserved_usd"] > 0
 
 
+async def test_empty_search_is_accounted_and_stops_before_research_claims(store):
+    class EmptySearch(DemoProvider):
+        async def discover(self, query, config):
+            return ModelResult(SearchResults(hits=[]), input_tokens=100, output_tokens=20)
+
+    run_id = await store.create_run(
+        RunCreate(question="Empty search regression", model_config={"provider": "demo"})
+    )
+    provider = EmptySearch()
+    gateway = Gateway(store, provider, provider)
+    with pytest.raises(ProviderFailure, match="no verifiable source URLs"):
+        await gateway.search(run_id, "lookup", "Original evidence")
+    usage = await store.usage(run_id)
+    assert len(usage) == 1 and usage[0]["state"] == "settled"
+    assert usage[0]["details"]["input_tokens"] == 100
+    assert "no verifiable" in usage[0]["details"]["error"]
+
+
+async def test_successful_search_recovery_does_not_reuse_empty_legacy_result_or_repeat_calls(store):
+    class Search(DemoProvider):
+        calls = 0
+
+        async def discover(self, query, config):
+            self.calls += 1
+            return ModelResult(SearchResults(hits=[{"url": "https://example.org/study", "title": "Source"}]))
+
+    run_id = await store.create_run(
+        RunCreate(question="Search cache recovery", model_config={"provider": "demo"})
+    )
+    await store.put(run_id, "invocation", "lookup", {"output": {"hits": []}})
+    provider = Search()
+    gateway = Gateway(store, provider, provider)
+    for _ in range(2):
+        result = await gateway.search(run_id, "lookup", "Primary sources")
+        assert result.hits[0].url == "https://example.org/study"
+    assert provider.calls == 1
+    assert (await store.by_key(run_id, "invocation", "lookup")).data["output"]["hits"] == []
+
+
 @respx.mock
 async def test_malformed_model_output_is_an_uncertain_failure():
     provider = OpenAIProvider("unit-test-key")

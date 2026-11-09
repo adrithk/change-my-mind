@@ -173,20 +173,20 @@ async def test_clarification_preserves_original_question_and_revises_frame(store
 async def test_submission_recovers_dependency_write_before_commit_marker(store, run_id, monkeypatch):
     engine = workflow(store)
     original_link = store.link
-    failed = False
+    failed_key = None
 
     async def interrupt_link(topic, upstream, downstream):
-        nonlocal failed
+        nonlocal failed_key
         target = await store.get_record(topic, downstream)
-        if target.kind == "submission" and not failed:
-            failed = True
+        if target.kind == "submission" and failed_key is None:
+            failed_key = target.key
             raise ProviderFailure("Interrupted artifact assembly")
         await original_link(topic, upstream, downstream)
 
     monkeypatch.setattr(store, "link", interrupt_link)
     with pytest.raises(ProviderFailure):
         await engine.execute(run_id)
-    assert not await store.is_committed(run_id, "submission", "research:A:background")
+    assert failed_key and not await store.is_committed(run_id, "submission", failed_key)
     await engine.execute(run_id)
     assert (await store.get_run(run_id)).status == "completed"
-    assert await store.is_committed(run_id, "submission", "research:A:background")
+    assert await store.is_committed(run_id, "submission", failed_key)

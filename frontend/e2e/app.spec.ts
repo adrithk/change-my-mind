@@ -30,7 +30,19 @@ test("simple topic page, connection handoff, and complete demo", async ({
   expect((await connection.json()).authorization_url).toContain(
     "client_id=dynamic_agent_client",
   );
-  await page.getByRole("button", { name: "Try a demo" }).click();
+  const demo = await page.request.post("/api/runs", {
+    data: {
+      question: "Offline full workflow check",
+      model_config: { provider: "demo" },
+    },
+  });
+  expect(demo.ok()).toBeTruthy();
+  await page.goto(`/#${(await demo.json()).id}`);
+  const verdictButton = page.getByRole("button", { name: /Verdict made/ });
+  await expect(
+    page.getByText("Final outcome", { exact: true }).or(verdictButton),
+  ).toBeVisible();
+  if (await verdictButton.isVisible()) await verdictButton.click();
   await expect(page.getByText("Final outcome", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "What’s being debated" }),
