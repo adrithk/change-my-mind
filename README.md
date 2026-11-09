@@ -38,6 +38,8 @@ Separately billed API calls are **disabled by default**, even if `OPENAI_API_KEY
 
 ### Development
 
+Run `uv run change-my-mind trace` to open the separate read-only developer inspector at **http://127.0.0.1:8002**. Select a debate to watch in-flight calls, search queries, role/model/reasoning settings, token usage, errors, completed structured outputs, and private drafts. Expand outputs or filter by role/text. It refreshes every two seconds and does not start model calls or alter the debate. Agent visibility rules remain unchanged. Model private chain-of-thought and token-by-token intermediate reasoning are not available; submitted outputs appear after each call completes. The inspector can start while a debate is running without restarting its backend.
+
 Run `uv run change-my-mind serve` in one terminal and `npm run dev` from `frontend/` in another. Vite proxies `/api` to port 8000.
 
 Settings and defaults:

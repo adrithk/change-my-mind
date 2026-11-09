@@ -25,6 +25,14 @@ def serve(host: str = "127.0.0.1", port: int = 8000):
 
 
 @app.command()
+def trace(port: int = 8002):
+    """Open a separate local read-only developer inspector. Does not start model calls."""
+    from .developer import serve
+
+    serve(port)
+
+
+@app.command()
 def types(output: Path = Path("frontend/src/api.generated.ts")):
     """Generate TypeScript interfaces from the FastAPI OpenAPI schema."""
     import tempfile
