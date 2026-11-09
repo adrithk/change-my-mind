@@ -546,7 +546,7 @@ export default function App() {
                   Stop
                 </button>
               )}
-              {(["interrupted", "failed", "cancelled"].includes(run.status) || (run.status === "needs_review" && run.stage === "framing" && run.error === "Specialist still needs source details after the bounded retrieval allowance")) && (
+              {(["interrupted", "failed", "cancelled"].includes(run.status) || (run.status === "needs_review" && ["framing", "research"].includes(run.stage) && run.error === "Specialist still needs source details after the bounded retrieval allowance")) && (
                 <button onClick={() => action("resume")} disabled={busy}>
                   Resume
                 </button>

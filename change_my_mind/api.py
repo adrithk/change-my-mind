@@ -231,12 +231,12 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/runs/{run_id}/resume", response_model=RunView)
     async def resume(run_id: str):
         run = await store.get_run(run_id, records=False)
-        framing_recovery = (
+        source_recovery = (
             run.status == "needs_review"
-            and run.stage == "framing"
+            and run.stage in {"framing", "research"}
             and run.error == "Specialist still needs source details after the bounded retrieval allowance"
         )
-        if run.status not in {"failed", "interrupted", "cancelled"} and not framing_recovery:
+        if run.status not in {"failed", "interrupted", "cancelled"} and not source_recovery:
             raise HTTPException(
                 409, "This run cannot be resumed; budget or evidence-review limits require a new run"
             )

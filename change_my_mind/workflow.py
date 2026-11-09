@@ -111,8 +111,10 @@ class Workflow:
             "required_objections": required,
             "mode": run.config["mode"],
             "variant": run.config.get("variant", "standard"),
-            "evidence_omitted": max(0, len(rows) - len(selected)),
-            "retrieval_instructions": "Use evidence_requests with a visible source_id and query to inspect omitted source passages.",
+            "evidence_omitted": len(
+                {r.id for r in rows if r.kind in {"source", "passage", "claim"}} - {r.id for r in selected}
+            ),
+            "retrieval_instructions": "Use evidence_requests only to inspect stored passages of a visible, retrieved source. Unavailable sources have no hidden text: disclose the gap and use next_queries for alternative sources during research.",
             "synthetic": run.config["model_config"]["provider"] == "demo",
             "current_framing": current_frame.data if current_frame else None,
             "case_presentation_order": case_order,
@@ -129,6 +131,12 @@ class Workflow:
         }
 
     async def invoke(self, run_id, key, role, context, schema, *, team=None, final=False):
+        seen_passages = {
+            item["id"]
+            for collection in ["records", "passages", "additional_passages"]
+            for item in context.get(collection, [])
+            if item.get("id") and (collection != "records" or item.get("kind") == "passage")
+        }
         for attempt in range(3):
             output = await self.gateway.invoke(
                 run_id, f"{key}:read:{attempt}", role, context, schema, team=team, final=final
@@ -153,19 +161,46 @@ class Workflow:
                     public=team is None,
                 )
                 return output.model_copy(update={"evidence_requests": []})
-            if attempt == 2:
-                raise NeedsReview(
-                    "Specialist still needs source details after the bounded retrieval allowance"
-                )
+            # Validate every reference, including requests outside the per-turn read allowance.
+            sources = {}
+            for request in output.evidence_requests:
+                source = await self.store.get_record(run_id, request.source_id, audience=team or "observer")
+                if source.kind != "source":
+                    raise EvidenceError("Additional retrieval requires a registered source")
+                sources[source.id] = source
             extra = []
-            for request in output.evidence_requests[:3]:
-                passages = await self.evidence.relevant_passages(
-                    run_id, request.query, team or "observer", source_id=request.source_id, limit=6
+            if attempt < 2:
+                for request in output.evidence_requests[:3]:
+                    if sources[request.source_id].data.get("access_status") != "retrieved":
+                        continue
+                    passages = await self.evidence.relevant_passages(
+                        run_id, request.query, team or "observer", source_id=request.source_id, limit=6
+                    )
+                    for passage in passages:
+                        if passage.id not in seen_passages:
+                            extra.append(passage.model_dump())
+                            seen_passages.add(passage.id)
+            if not extra:
+                if schema is not Submission:
+                    raise NeedsReview(
+                        "Requested source details are unavailable or the source-inspection allowance is exhausted"
+                    )
+                # A draft can retain unresolved questions without replaying it against an empty
+                # evidence packet. Claims remain unchecked and pass through the normal checker.
+                gaps = [
+                    f"Source inspection unresolved ({request.source_id}; "
+                    f"{sources[request.source_id].data.get('access_status', 'unknown')}): {request.query}"
+                    for request in output.evidence_requests
+                ]
+                await self.store.emit(
+                    run_id, "retrieval", {"role": role, "passages": 0, "reason": "no_new_passages"}
                 )
-                extra += [p.model_dump() for p in passages]
+                return output.model_copy(
+                    update={"evidence_requests": [], "gaps": list(dict.fromkeys(output.gaps + gaps))}
+                )
             context = {
                 **context,
-                "additional_passages": extra,
+                "additional_passages": context.get("additional_passages", []) + extra,
                 "instruction": context.get("instruction", "")
                 + "\nUse the requested evidence and produce a final output; disclose remaining gaps.",
             }
@@ -279,12 +314,21 @@ class Workflow:
                         team=team,
                         model_role="researcher" if deep else "search",
                     )
-                    await asyncio.gather(
+                    sources = await asyncio.gather(
                         *(
                             self.evidence.retrieve(run_id, h.url, team=team, stage=stage, query=query)
                             for h in hits.hits[:3]
                         )
                     )
+                    # Try the remaining discovered URLs before buying another search when
+                    # the first three documents are blocked. Never reconstruct their text.
+                    if not any(source.data.get("access_status") == "retrieved" for source in sources):
+                        await asyncio.gather(
+                            *(
+                                self.evidence.retrieve(run_id, h.url, team=team, stage=stage, query=query)
+                                for h in hits.hits[3:5]
+                            )
+                        )
                 except BudgetExceeded:
                     await self.store.put(
                         run_id,

@@ -123,6 +123,10 @@ class Evidence:
             text = "\n\n".join(text for _, text in page.sections)
             if not text.strip():
                 raise EvidenceError("Document has no extractable text; scanned PDFs require OCR")
+            if len(text.strip()) < 300 and re.search(
+                r"(?:enable|turn on) javascript|javascript (?:is )?(?:required|disabled)", text, re.I
+            ):
+                raise EvidenceError("Source contains only a JavaScript access notice, not document text")
             directory = self.store.data_dir / "evidence" / run_id
             directory.mkdir(parents=True, exist_ok=True)
             digest = hashlib.sha256(page.raw).hexdigest()

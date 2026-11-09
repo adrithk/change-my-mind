@@ -44,3 +44,29 @@ def test_local_api_complete_demo_and_exports(tmp_path):
             ).status_code
             == 403
         )
+
+
+def test_resume_recovers_legacy_research_loop_but_preserves_final_review_gates(tmp_path):
+    from change_my_mind.schemas import RunCreate
+
+    application = create_app(Settings(data_dir=tmp_path, OPENAI_API_KEY=None, _env_file=None))
+    with TestClient(application) as client:
+        # Exercise the recovery API without dispatching any jobs, even synthetic ones.
+        client.portal.call(application.state.jobs.stop)
+
+        async def saved_run(stage):
+            run_id = await application.state.store.create_run(
+                RunCreate(question="Saved recovery fixture", model_config={"provider": "demo"})
+            )
+            await application.state.store.set_status(
+                run_id,
+                "needs_review",
+                stage=stage,
+                error="Specialist still needs source details after the bounded retrieval allowance",
+            )
+            return run_id
+
+        research = client.portal.call(saved_run, "research")
+        judgment = client.portal.call(saved_run, "judgment")
+        assert client.post(f"/api/runs/{research}/resume").status_code == 200
+        assert client.post(f"/api/runs/{judgment}/resume").status_code == 409

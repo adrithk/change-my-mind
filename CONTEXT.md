@@ -1,6 +1,6 @@
 # Change My Mind — working context
 
-Updated November 8, 2026. This file is the handoff for continued iteration. Read it alongside README.md; do not rely on an old chat being available.
+Updated November 9, 2026. This file is the handoff for continued iteration. Read it alongside README.md; do not rely on an old chat being available.
 
 ## User intent and latest decisions
 
@@ -130,3 +130,11 @@ Deferred: hosted deployment, accounts for app users, authenticated/paywalled res
 ## Low-usage validation before live runs
 
 The user asked to verify the full system without consuming substantial account usage before another live run. Run deterministic/offline workflow and browser checks first. The latest check passed 42 backend tests and one full browser flow using fictional demo evidence; the production frontend build also passed. Preserve the distinction between engine validation and factual/live-provider validation. The single short Sol-low connectivity probe was blocked by `subscription_sharing_usage_limit_exceeded`; live discovery is still unverified. Do not restart a full expensive debate to test connectivity. Keep the saved run stopped, retain partial records, and use one bounded small source-discovery check when account access permits. No credit/billing settings were changed. Local validation details are in ignored `data/validation/offline-validation.md`.
+
+## Blocked-source recovery (November 9)
+
+A subsequently user-started live run (`run_de732db665884c7f`, Israel vs Palestine) successfully discovered URLs but stopped in research after repeated source-inspection requests. Team A's first documents returned HTTP 403; Team B also retrieved two JavaScript-only notices. This establishes live discovery for that run, not a completed live assessment or verified research quality. Do not automatically restart it to test fixes.
+
+Research/debate drafts now retain unmet source requests as explicit gaps when local inspection supplies no new passages, rather than buying repeated generations against an unchanged packet. Available omitted passages still get a bounded inspection; unknown/private source references remain errors. Claims stay unchecked until the checker, and final review gates remain strict. The omitted-evidence count now counts only omitted evidence records. When the first three search results are blocked, research tries the remaining two already-discovered URLs before another model search. JavaScript-only access notices are unavailable evidence. The exact legacy retrieval-loop error can be resumed from research as well as framing; other evidence-review gates are unchanged.
+
+Validation: 16 focused offline recovery/workflow/API checks passed, and the frontend production build passed. Replaying the actual saved failing response in a temporary database also committed the recovered draft without any network/model calls. This fix consumed no model credits; the real debate remains stopped pending an explicit Resume action.
